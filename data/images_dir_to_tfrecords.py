@@ -39,7 +39,7 @@ import scipy.interpolate
 import io
 import tkinter as tk
 from tkinter import filedialog
-
+import csv
 
 
 class Frame2StxTfrecords:
@@ -114,7 +114,7 @@ class Frame2StxTfrecords:
             #imName = '_'.join([self.output_prefix, os.path.splitext(frame_name)[0], 'stx', str(stixel).zfill(3)])
 
             i = 12 + (stixel * 5) + x_start
-            # print('\nstixel {} center = {}'.format(stixel, i))
+            # print('\nstixel {} center = {}'.format(stixel, i))q
             ' cut the lower image part (high y values)'
             if img.shape[0] == self.stx_h:
                 s = img[:, i - 12:i + 12, :]  # that's the stixel
@@ -171,6 +171,7 @@ class Frame2StxTfrecords:
                 contents = output.getvalue()
             tf_example = self.create_tf_example(contents, stx_label)
 
+
             '''
             ' save the stixel image '
             output_path = os.path.join(self.output_dir, imName + '_L' + (str(stx_label)).zfill(2) + '.png')
@@ -201,7 +202,9 @@ def main(data_dir, isControl = True):
 
     objects = {}
     for d in object_dirs:
-        objects[d.split('/')[1]] = glob.glob(d + '/*.csv')
+        objects[d.split('/')[-1]] = glob.glob(d + '/*.csv') # Take the last subfolder name as the key
+        #objects[d.split('/')[1]] = glob.glob(d + '/*.csv')
+        print(d)
 
     # Create an integer label for each object category
     category_labels = {}
@@ -225,15 +228,23 @@ def main(data_dir, isControl = True):
     if not os.path.exists(tfrecords_dir + '/control') and not os.path.isdir(tfrecords_dir + '/control'):
         os.mkdir(tfrecords_dir + '/control')
 
-
     object_names = list(objects.keys())
 
     # Create a separate TFRecord file for each object category
     for object in object_names:
 
+        print('Object:' + object)
+
+        # Create object labels list
+        object_labels = []
+
+        dir_name = os.path.basename(os.path.normpath(object))
+        #print('folder to be parsed: ' + dir_name)
+
         # Write each image of the object into that file
         num_images = len(objects[object])
         if num_images == 0:
+            print('no images within ' + object)
             continue
         else:
             print(object + ': Number of images to be processed - {}'.format(num_images))
@@ -241,7 +252,8 @@ def main(data_dir, isControl = True):
         # Create this object's TFRecord file
         train_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/train/' + object + '.tfrecord')
         valid_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/valid/' + object + '.tfrecord')
-        test_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/test/' + object + '.tfrecord')
+        print('Opening writers for ' + object + ' train/valid records')
+        #object_stixels_list = []
 
         # Create this object's images control directory
         control_dir = data_dir + '/tfrecords/control/' + object
@@ -254,7 +266,17 @@ def main(data_dir, isControl = True):
         # Go through object images
         for index in range(num_images):
             i = objects[object][index]
-            # Let's make 80% train and leave 20% for validation
+
+            # Make sure there's an image - otherwise move to next image
+            frame_path = (i.split('.')[0]) + '.jpg'
+            if os.path.exists(frame_path):
+                print('parse: ' + frame_path)
+            else:
+                print(frame_path + ' does not exist!')
+                continue
+
+            # Let's make 80% train, 15% for validation & 5% for test
+            isTestImage = False
             if index < num_images * 0.8:
                 writer = train_writer
                 #print('write to test writer')
@@ -262,35 +284,50 @@ def main(data_dir, isControl = True):
                 writer = valid_writer
                 #print('write to valid writer')
             else:
+                # Create new test writer for each image
+                frame_name = os.path.basename(i.split('.')[0])
+                test_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/test/' + object + ' ' + frame_name + '_test.tfrecord')
                 writer = test_writer
-                #print('write to test writer')
+                isTestImage = True
 
-            # annotations_basename = os.path.basename(i)
-            frame_path = (i.split('.')[0]) + '.jpg'
-            if os.path.exists(frame_path):
-                print('parse: ' + frame_path)
-            else:
-                print(frame_path + ' does not exist!')
+            '''
+            frame_name = os.path.basename(i.split('.')[0])
+            test_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/test/' + object + ' ' + frame_name + 'test.tfrecord')
+            writer = test_writer
+            isTestImage = True
+            '''
+
 
             # parse the image and save it to TFrecord
             f_to_stx = Frame2StxTfrecords(frame_path, i, writer,control_dir)
-            #frame_labels = f_to_stx.create_stx(False)
             frame_labels = f_to_stx.create_stx(isControl)
+            object_labels.extend(frame_labels)
+            if isTestImage:
+                # Close the test image writer
+                test_writer.close()
+                isTestImage = False
 
         train_writer.close()
         valid_writer.close()
-        test_writer.close()
+        #test_writer.close()
+
+        'save coordinates to file'
+        out_filename = os.path.join(control_dir,object + '.csv')
+        with open(out_filename, 'w', newline='', encoding="utf-8") as f_output:
+            csv_output = csv.writer(f_output)
+            csv_output.writerows(object_labels)
+            print('writing csv file to ' + out_filename)
+
 
 
 if __name__ == '__main__':
 
     ' when executed as a script, open a GUI window to select the presented TFrecord file '
-    '''
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
     data_dir = filedialog.askdirectory()
-    '''
-    data_dir = 'annotated' # TEMPORARY !!!!!!
+
+    #data_dir = 'annotated' # TEMPORARY !!!!!!
     print('Convert to TFrecords all annotated images within - ' + data_dir + ':')
 
     main(data_dir, True) # True saves a control image to a control directory
