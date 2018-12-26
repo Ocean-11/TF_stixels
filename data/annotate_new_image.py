@@ -15,7 +15,7 @@ import matplotlib.image as mpimg
 from matplotlib import get_backend
 import numpy as np
 # from AnacondaProjects.Utils.extract_border_coords import ExtractCoords #
-from Annotation_tools.extract_border_coords import ExtractCoords
+from extract_border_coords import ExtractCoords
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 

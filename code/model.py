@@ -177,7 +177,9 @@ def MobileNetV2(inputs, k, is_training):
 
     x = _inverted_residual_block(inputs=x, filters=16, kernel=(3, 3), t=1, strides=1, n=1, is_training=is_training)
     x = _inverted_residual_block(inputs=x, filters=24, kernel=(3, 3), t=6, strides=2, n=2, is_training=is_training)
+    x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None) # RAN
     x = _inverted_residual_block(inputs=x, filters=32, kernel=(3, 3), t=6, strides=2, n=3, is_training=is_training)
+    x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None)  # RAN
     x = _inverted_residual_block(inputs=x, filters=64, kernel=(3, 3), t=6, strides=2, n=4, is_training=is_training)
     x = _inverted_residual_block(inputs=x, filters=96, kernel=(3, 3), t=6, strides=1, n=3, is_training=is_training)
 
@@ -232,10 +234,11 @@ def model_fn(features, labels, mode, params):
     # decide if training or not
     if mode == tf.estimator.ModeKeys.TRAIN:
         is_training = True
+        print('Model training mode')
     else:
         is_training = False
+        print('Model eval mode')
 
-    print('TF_stixels model ')
 
     # Reference to the tensor named "image" in the input-function.
     x = features["image"]
@@ -252,16 +255,8 @@ def model_fn(features, labels, mode, params):
     # Softmax output of the neural network.
     y_pred = tf.nn.softmax(logits=logits)
 
-    '''
-    # Print the softmax prediction values
-    if mode == tf.estimator.ModeKeys.PREDICT:
-        # print the prediction tensor and pass it through
-        with tf.Session() as sess:
-    '''
-
     # Classification output of the neural network.
     y_pred_cls = tf.argmax(y_pred, axis=1)
-
 
     # 2. Generate predictions
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -287,15 +282,20 @@ def model_fn(features, labels, mode, params):
         labels, y_pred_cls)}
 
     # 4. Define optimizer
-    lr = 1e-4
-    step_rate = 5000
-    decay = 0.7  # if this equals 1 the lr stays the same
+    lr = params.learning_rate
+    #lr = 1e-4 # RAN - original StixelNET value
+    step_rate = 20000
+    #step_rate = 5000 # original StixelNET value
+    decay = 0.95 # try to break the 0.23 accuracy barrier ...
+    #decay = 0.7  # if this equals 1 the lr stays the same (original StixelNET value)
     learning_rate = tf.train.exponential_decay(
         lr, global_step=tf.train.get_or_create_global_step(),
         decay_steps=step_rate,
         decay_rate=decay,
         staircase=True)
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+
+    print('Learning rate = {}'.format(learning_rate))
 
     # for learning parameters of batch normalization:
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -311,7 +311,26 @@ def model_fn(features, labels, mode, params):
     tf.summary.scalar("accuracy", metrics["accuracy"][1])
     return spec
 
+#######################################
+###   Defining the Parse Function   ###
+#######################################
 
+def parse(serialized):
+    # Define the features to be parsed out of each example.
+    #    You should recognize this from when we wrote the TFRecord files!
+    features ={
+        'image': tf.FixedLenFeature([], tf.string),
+        'label': tf.FixedLenFeature([], tf.int64)
+    }
+    # Parse the features out of this one record we were passed
+    parsed_example = tf.parse_single_example(serialized=serialized, features=features)
+    # Format the data
+    image_raw = parsed_example['image']
+    image = tf.image.decode_png(image_raw, channels=3, dtype=tf.uint8) # Decode the raw bytes so it becomes a tensor with type.
+    image = tf.cast(image, tf.float32)  # The type is now uint8 but we need it to be float.
+
+    label = parsed_example['label']
+    return {'image': image}, label
 
 
 ###################################
@@ -321,18 +340,39 @@ def model_fn(features, labels, mode, params):
 
 params = tf.contrib.training.HParams(
     learning_rate=0.001,
-    train_epochs=100,
+    train_epochs=250,
     batch_size=32,
     image_height=370,
     image_width=24,
     image_depth=3
 )
 
+'''
+# StixelNet initial params (note that params.learning_rate was not used)
+params = tf.contrib.training.HParams(
+    learning_rate=0.001,
+    train_epochs=250,
+    batch_size=32,
+    image_height=370,
+    image_width=24,
+    image_depth=3
+)
+'''
+
 # Run Configuration
 config = tf.estimator.RunConfig(
     tf_random_seed=0,
-    save_checkpoints_steps=250,
+    save_checkpoints_steps=10000,
+    save_checkpoints_secs=None,
+    save_summary_steps=500,
+)
+
+'''
+# Run Configuration
+config = tf.estimator.RunConfig(
+    tf_random_seed=0,
+    save_checkpoints_steps=1000,
     save_checkpoints_secs=None,
     save_summary_steps=10,
 )
-
+'''

@@ -109,102 +109,22 @@ def load_dataset(mode):
     return dataset
 
 
-'''
-
-# Original stx_train.py function
-
-def input_fn(filenames, train, batch_size=batch_size, buffer_size=100000):
-    # Args:
-    # filenames:   Filenames for the TFRecords files.
-    # train:       Boolean whether training (True) or testing (False).
-    # batch_size:  Return batches of this size.
-    # buffer_size: Read buffers of this size. The random shuffling
-    #              is done on the buffer, so it must be big enough.
-
-    # Create a TensorFlow Dataset-object which has functionality
-    # for reading and shuffling data from TFRecords files.
-    dataset = tf.data.TFRecordDataset(filenames=filenames)
-
-    # Parse the serialized data in the TFRecords files.
-    # This returns TensorFlow tensors for the image and labels.
-    dataset = dataset.map(parse)
-
-    if train:
-        # If training then read a buffer of the given size and
-        # randomly shuffle it.
-        ######dataset = dataset.shuffle(buffer_size=buffer_size)
-
-        # Allow infinite reading of the data.
-        num_repeat = None  # -1
-    else:
-        # If testing then don't shuffle the data.
-
-        # Only go through the data once.
-        num_repeat = 1
-
-    # Repeat the dataset the given number of times.
-    dataset = dataset.repeat(num_repeat)
-
-    # Get a batch of data with the given size.
-    # dataset = dataset.batch(batch_size)
-    # dataset = tf.contrib.data.batch_and_drop_remainder(batch_size)
-    dataset = dataset.apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
-    print('@@@')
-    print(dataset.output_shapes)  # ==> "(16,)" (the batch dimension is known)
-    print('@@@')
-    
-    # Create an iterator for the dataset and the above modifications.
-    iterator = dataset.make_one_shot_iterator()
-
-    # Get the next batch of images and labels.
-    images_batch, labels_batch = iterator.get_next()
-
-    # The input-function must return a dict wrapping the images.
-    x = {'image': images_batch}
-    y = labels_batch
-    return x, y
-'''
-
-
-#######################################
-###   Defining the Parse Function   ###
-#######################################
-
-def parse(serialized):
-    # Define the features to be parsed out of each example.
-    #    You should recognize this from when we wrote the TFRecord files!
-    features ={
-        'image': tf.FixedLenFeature([], tf.string),
-        'label': tf.FixedLenFeature([], tf.int64)
-    }
-    # Parse the features out of this one record we were passed
-    parsed_example = tf.parse_single_example(serialized=serialized, features=features)
-    # Format the data
-    image_raw = parsed_example['image']
-    image = tf.image.decode_png(image_raw, channels=3, dtype=tf.uint8) # Decode the raw bytes so it becomes a tensor with type.
-    image = tf.cast(image, tf.float32)  # The type is now uint8 but we need it to be float.
-
-    label = parsed_example['label']
-    return {'image': image}, label
-
-
-
 ###################################
 ###   Define Output Directory   ###
 ###################################
 
 import time, datetime
+from model import model_fn, params, config, parse
 
 ts = time.time()
 timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
 
-model_dir = '../results/' + timestamp
+model_dir = '../results/' + timestamp + '_LR_' + str(params.learning_rate)+ '_EP_' + str(params.train_epochs)
+#print(model_dir)
 
 #############################
 ###    Define Estimator   ###
 #############################
-
-from model import model_fn, params, config
 
 estimator = tf.estimator.Estimator(model_fn=model_fn, model_dir=model_dir, config=config, params=params)
 
@@ -237,6 +157,7 @@ for e in range(params.train_epochs):
     print('Epoch: ' + str(e))
     #estimator.train(input_fn=lambda: dataset_input_fn('train'), hooks=hooks) # RAN
     estimator.train(input_fn=lambda: dataset_input_fn('train'))
+    print('### validate ###')
     estimator.evaluate(input_fn=lambda: dataset_input_fn('valid'))
 
 print('tensorboard --logdir=' + str(model_dir))
