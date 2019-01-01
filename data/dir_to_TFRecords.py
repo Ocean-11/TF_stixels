@@ -4,7 +4,9 @@
 *
 * Purpose: the module receives a directory name, creates train/valid/test/control/meta_data
 *          folders, and scans it's "annotated" folder, translating annotated images into
-*          train/valid/test TFrecords. Control images and meta_data are also saved
+*          stixels TFrecords. Note that lowest bound limit stixels diluted by a factor of 4
+*          to reduce classification bias
+*
 *
 * Inputs:
 *   frame_path - annotated image path
@@ -42,6 +44,7 @@ import tkinter as tk
 from tkinter import filedialog
 import csv
 from TF_stixels.code.model import params
+import random
 
 
 class Frame2StxTfrecords:
@@ -155,7 +158,8 @@ class Frame2StxTfrecords:
 
             'translate from absolute GT coordinates to stixel coordinates and translate to label'
             stx_GT_y -= diff_h
-            if (stx_GT_y <= 0):
+            if (stx_GT_y < 0): # RAN - 31-12-18
+            #if (stx_GT_y <= 0):
                 'no border in stixel range'
                 stx_GT_y = 0
                 for_use = 0
@@ -163,8 +167,6 @@ class Frame2StxTfrecords:
                 for_use = 1
             stx_label = np.floor_divide(stx_GT_y, 5)
             #print('stixel GT value = {}, use={}'.format(stx_label,for_use))
-
-            self.labels.append([imName, stx_label, for_use, self.frame_type])
 
             ' display the GT on the stixel or on the original image '
             # self.plot_stx_GT(imName,s,stx_label)
@@ -174,22 +176,40 @@ class Frame2StxTfrecords:
                 plt.plot(x_start + i, diff_h + (stx_label * 5) + 2, marker='o', markersize=2, color="red")
             plt.draw()
 
+            ' dilute the amount of lower end border Stixels by a factor of 1:4'
+            dilution_factor = 4
+            if (stx_label == 73):
+                p_label = random.randint(1,dilution_factor + 1)
+                #print('prob = {}'.format(p_label))
+                if (p_label>1):
+                    for_use = 0
+
+            ' save the stixel only if there is a boundary within the stixel'
+            if for_use == 1:
+                ' Apend the new stixel label'
+                self.labels.append([imName, stx_label, for_use, self.frame_type])
+
+                ' save a tfrecord file'
+                img_for_tfrec = Image.fromarray(s)
+                with io.BytesIO() as output:
+                    img_for_tfrec.save(output, format="PNG")
+                    contents = output.getvalue()
+                tf_example = self.create_tf_example(contents, stx_label)
+                self.writer.write(tf_example.SerializeToString())
+
+            '''
+            ' Apend the new stixel label'
+            self.labels.append([imName, stx_label, for_use, self.frame_type])
+
             ' save a tfrecord file'
             img_for_tfrec = Image.fromarray(s)
             with io.BytesIO() as output:
                 img_for_tfrec.save(output, format="PNG")
                 contents = output.getvalue()
             tf_example = self.create_tf_example(contents, stx_label)
-
-
-            '''
-            ' save the stixel image '
-            output_path = os.path.join(self.output_dir, imName + '_L' + (str(stx_label)).zfill(2) + '.png')
-            im = Image.fromarray(s)   
-            im.save(output_path)
-            '''
-
             self.writer.write(tf_example.SerializeToString())
+            '''
+
         # print('labels are: {}'.format(list(zip(*self.labels))[1]))
 
         if (printCtrlImage):

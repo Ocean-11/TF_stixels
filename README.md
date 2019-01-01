@@ -1,5 +1,5 @@
 # TF_stixels
-This folder contains code for Stixels annotation, training  and prediction 
+This folder contains code for Stixels annotation, training  and prediction. The framework originates from Shaharzuler/NexarStixelnet excellent implementation of StixelNet for mobile
 
 # Folders structure
 data - includes all the relevant scripts for images annotation, visualization and TFRecords creation.
@@ -21,4 +21,12 @@ images_dir_to_tfrecords()
 dir_to_tfrecords()
 *   The module receives a directory name, creates train/valid/test/control/meta_data olders, and scans it's "annotated" folder, translating annotated images into train/valid/test TFrecords. Control images and meta_data are also saved
 
-                        
+create_dataset()
+*   copy train/valid/test/meta_data from a specified directory (built in a required structure to an output "Dataset" directory.
+
+train()
+*   the module trains a MobileNetV2 stixels model
+
+model()
+*   the module implements a MobileNetV2 stixels model
+                   

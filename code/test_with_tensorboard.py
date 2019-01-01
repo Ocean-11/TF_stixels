@@ -12,6 +12,8 @@ from tkinter import filedialog
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 
+from model import params
+
 
 
 #######################################
@@ -120,7 +122,8 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
     next_image_data = iterator.get_next()
 
     num_of_stixels = len(predictions_list)
-    new_im = Image.new('RGB', (24 + 5 * (num_of_stixels-1), 370))
+    new_im = Image.new('RGB', (params.image_width + 5 * (num_of_stixels-1), 370))
+    #new_im = Image.new('RGB', (24 + 5 * (num_of_stixels - 1), 370))
     x_offset = 0
     labels = []
 
@@ -151,11 +154,18 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
         for index in range(num_of_stixels):
             #print('label = {}, prediction = {}'.format(labels[index], predictions_list[index]))
 
-            plt.plot(12 + 5 * (index-1), labels[index] * 5, marker='o', markersize=5, color="blue")
-            plt.plot(12 + 5 * (index-1), predictions_list[index] * 5, marker='o', markersize=4, color="red")
+            plt.plot(int(params.image_width/2) + 5 * (index-1), labels[index] * 5, marker='o', markersize=5, color="blue")
+            plt.plot(int(params.image_width/2) + 5 * (index-1), predictions_list[index] * 5, marker='o', markersize=4, color="red")
+
+            #plt.plot(12 + 5 * (index-1), labels[index] * 5, marker='o', markersize=5, color="blue")
+            #plt.plot(12 + 5 * (index-1), predictions_list[index] * 5, marker='o', markersize=4, color="red")
             plt.draw()
 
-        plt.savefig(os.path.join(output_folder, image_name + '_prediction_' + '.jpg'))
+        model_dirname = os.path.basename(model_dir)
+        print(model_dirname)
+        image_save_name = image_name.replace('.tfrecord', '') + '_prediction_' + model_dirname + '.jpg'
+        print(image_save_name)
+        plt.savefig(os.path.join(output_folder, image_name + '_prediction_' + model_dirname + '.jpg'))
         plt.show()
         plt.close()
 
@@ -167,15 +177,23 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
 
 # params
 H = 370
-W = 24
+W = params.image_width
+#W = 24
 C = 3
 
 #test_dir = '../data/annotated/tfrecord/test'
+#test_file = '/media/vision/Datasets/Dataset_4/test/train_img_NE1_Site40 Normal frame_000001_test_W24.tfrecord'
+test_file = '/media/vision/Datasets/Dataset_4/test/NE1_UKSite4GC frame_89_original_roi_gc_test_W24.tfrecord'
 #test_files = glob.glob(test_dir + '/*.tfrecord')
-test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000373_test.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000088_test.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000373_test.tfrecord'
 #test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000041_test.tfrecord'
 #test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000194_test.tfrecord'
 #test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000464_test.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_Site40 Normal frame_000001_test_W24.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_SegmentedNE image_01_test_W24.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_GC23-Normal_part frame_000012_test_W24.tfrecord'
+
 
 # Now make all these files accessible depending on whether we
 #    are in training ('train') or validation ('valid') mode.
@@ -193,7 +211,11 @@ tf.logging.set_verbosity(tf.logging.INFO) # possible values - DEBUG / INFO / WAR
 from model import model_fn, params
 
 # Determine the model to be used for inference
-model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_10-34-21_LR_0.001_EP_50'
+model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_12-10-42_EP_100'
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-27_23-38-49_EP_1000'
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_17-01-07_LR_0.001_EP_1000'
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_12-36-12_LR_0.001_EP_250'
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_10-34-21_LR_0.001_EP_50'
 #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-25_11-36-29_LR_0.001_EP_50'
 #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_21-02-30_LR_0.001_EP_100'
 #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_18-08-15_LR_0.001_EP_100'
@@ -238,6 +260,5 @@ print('tensorboard --logdir=' + str(model_dir) + '--port 6006 --debugger_port 60
 
 # Visualize predictions based on single test TFrecord
 visualize_pred(test_file, predictions_list, model_dir)
-
 
 

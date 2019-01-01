@@ -179,7 +179,7 @@ def main(data_dir, stixel_width, isControl = True)
 
 # params
 H = 370
-#W = params.image_width
+W = params.image_width
 #W = 24
 C = 3
 

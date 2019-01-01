@@ -27,10 +27,22 @@ from tensorflow.python import debug as tf_debug # RAN
 ###   Gather Saved Data   ###
 #############################
 
+
+train_dir = '../data/Dataset_4/train'
+valid_dir = '../data/Dataset_4/valid'
+test_dir = '../data/Dataset_4/test'
+
+'''
+train_dir = '../data/Dataset_3/train'
+valid_dir = '../data/Dataset_3/valid'
+test_dir = '../data/Dataset_3/test'
+'''
+
+'''
 train_dir = '../data/annotated/tfrecords/train'
 valid_dir = '../data/annotated/tfrecords/valid'
 test_dir = '../data/annotated/tfrecord/test'
-
+'''
 '''
 train_dir = '../data/tfrecords/train'
 valid_dir = '../data/tfrecords/valid'
@@ -40,6 +52,9 @@ test_dir = '../data/tfrecords/test'
 train_files = glob.glob(train_dir + '/*.tfrecord')
 valid_files = glob.glob(valid_dir + '/*.tfrecord')
 test_files = glob.glob(test_dir + '/*.tfrecord')
+
+for file_ in valid_files:
+    print(file_)
 
 # Now make all these files accessible depending on whether we
 #    are in training ('train') or validation ('valid') mode.
@@ -119,7 +134,7 @@ from model import model_fn, params, config, parse
 ts = time.time()
 timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
 
-model_dir = '../results/' + timestamp + '_LR_' + str(params.learning_rate)+ '_EP_' + str(params.train_epochs)
+model_dir = '../results/' + timestamp + '_EP_' + str(params.train_epochs)
 #print(model_dir)
 
 #############################

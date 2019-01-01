@@ -40,12 +40,16 @@ import io
 import tkinter as tk
 from tkinter import filedialog
 import csv
+from TF_stixels.code.model import params
 
 
 class Frame2StxTfrecords:
-    def __init__(self, frame_path, GT_file_path, writer,control_dir):
+    def __init__(self, frame_path, GT_file_path, writer,control_dir, stixel_width):
         ' Define stixels dimensions'
-        self.stx_w = 24  # stixel width
+        self.stx_w = stixel_width  # stixel width
+        #self.stx_w = 24  # stixel width
+        self.stx_half_w = int(self.stx_w/2)
+        print('stixel half width = {}'.format(self.stx_half_w))
         self.stx_h = 370  # stixel height
         self.bin_pixels = 5  # stixel bins height
         self.stride = 5  # stride used to split to the frame
@@ -85,7 +89,8 @@ class Frame2StxTfrecords:
     def plot_stx_GT(self, imName, s, stx_label):
         fig, ax = plt.subplots()
         ax.imshow(s)
-        plt.plot(12, stx_label * 5, marker='o', markersize=4, color="red")
+        plt.plot(self.stx_half_w, stx_label * 5, marker='o', markersize=4, color="red")
+        #plt.plot(12, stx_label * 5, marker='o', markersize=4, color="red")
         plt.title(imName)
         plt.draw()
 
@@ -113,14 +118,17 @@ class Frame2StxTfrecords:
             #print(imName)
             #imName = '_'.join([self.output_prefix, os.path.splitext(frame_name)[0], 'stx', str(stixel).zfill(3)])
 
-            i = 12 + (stixel * 5) + x_start
+            i = self.stx_half_w + (stixel * 5) + x_start
+            #i = 12 + (stixel * 5) + x_start
             # print('\nstixel {} center = {}'.format(stixel, i))q
             ' cut the lower image part (high y values)'
             if img.shape[0] == self.stx_h:
-                s = img[:, i - 12:i + 12, :]  # that's the stixel
+                s = img[:, i - self.stx_half_w:i + self.stx_half_w, :]  # that's the stixel
+                #s = img[:, i - 12:i + 12, :]  # that's the stixel
             else:
                 diff_h = img.shape[0] - self.stx_h
-                s = img[diff_h:, i - 12:i + 12, :]  # that's the stixel
+                s = img[diff_h:, i - self.stx_half_w:i + self.stx_half_w, :]  # that's the stixel
+                #s = img[diff_h:, i - 12:i + 12, :]  # that's the stixel
 
             ' find the closest GT points '
             stx_GT_y = -1
@@ -195,7 +203,7 @@ class Frame2StxTfrecords:
         return self.labels
 
 
-def main(data_dir, isControl = True):
+def main(data_dir, stixel_width, isControl = True):
 
     # Gather file paths to all annotated images within the target directory (and subfolders)
     object_dirs = glob.glob(data_dir + '/*')
@@ -228,6 +236,9 @@ def main(data_dir, isControl = True):
     if not os.path.exists(tfrecords_dir + '/control') and not os.path.isdir(tfrecords_dir + '/control'):
         os.mkdir(tfrecords_dir + '/control')
 
+    if not os.path.exists(tfrecords_dir + '/meta_data') and not os.path.isdir(tfrecords_dir + '/meta_data'):
+        os.mkdir(tfrecords_dir + '/meta_data')
+
     object_names = list(objects.keys())
 
     # Create a separate TFRecord file for each object category
@@ -250,8 +261,8 @@ def main(data_dir, isControl = True):
             print(object + ': Number of images to be processed - {}'.format(num_images))
 
         # Create this object's TFRecord file
-        train_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/train/' + object + '.tfrecord')
-        valid_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/valid/' + object + '.tfrecord')
+        train_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/train/' + object + '_' + str(stixel_width) + '.tfrecord')
+        valid_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/valid/' + object + '_' + str(stixel_width) + '.tfrecord')
         print('Opening writers for ' + object + ' train/valid records')
         #object_stixels_list = []
 
@@ -280,15 +291,16 @@ def main(data_dir, isControl = True):
             if index < num_images * 0.8:
                 writer = train_writer
                 #print('write to test writer')
-            elif index < num_images * 0.95:
+            elif index < num_images * 0.9:
                 writer = valid_writer
                 #print('write to valid writer')
             else:
                 # Create new test writer for each image
                 frame_name = os.path.basename(i.split('.')[0])
-                test_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/test/' + object + ' ' + frame_name + '_test.tfrecord')
+                test_writer = tf.python_io.TFRecordWriter(tfrecords_dir + '/test/' + object + ' ' + frame_name + '_test_W' + str(stixel_width) + '.tfrecord')
                 writer = test_writer
                 isTestImage = True
+
 
             '''
             frame_name = os.path.basename(i.split('.')[0])
@@ -296,27 +308,42 @@ def main(data_dir, isControl = True):
             writer = test_writer
             isTestImage = True
             '''
-
-
             # parse the image and save it to TFrecord
-            f_to_stx = Frame2StxTfrecords(frame_path, i, writer,control_dir)
+            f_to_stx = Frame2StxTfrecords(frame_path, i, writer,control_dir, stixel_width)
             frame_labels = f_to_stx.create_stx(isControl)
-            object_labels.extend(frame_labels)
+            object_labels.extend(frame_labels) # append the new frame labels data
             if isTestImage:
                 # Close the test image writer
                 test_writer.close()
                 isTestImage = False
+
+            # Save the 1st train image to test directory for further validation
+            if index == 0:
+                # Create new test writer
+                frame_name = os.path.basename(i.split('.')[0])
+                test_writer = tf.python_io.TFRecordWriter(
+                    tfrecords_dir + '/test/train_img_' +
+                    object + ' ' + frame_name + '_test_' +
+                    str(stixel_width) + '.tfrecord')
+                f_to_stx = Frame2StxTfrecords(frame_path, i, test_writer, control_dir, stixel_width)
+                f_to_stx.create_stx(isControl)
+                test_writer.close()
 
         train_writer.close()
         valid_writer.close()
         #test_writer.close()
 
         'save coordinates to file'
-        out_filename = os.path.join(control_dir,object + '.csv')
+        meta_data_dir = os.path.join(control_dir + '/meta_data')
+        print(meta_data_dir)
+        out_filename = os.path.join(meta_data_dir,object + '.csv')
+        #out_filename = os.path.join(control_dir, object + '.csv')
+        '''
         with open(out_filename, 'w', newline='', encoding="utf-8") as f_output:
             csv_output = csv.writer(f_output)
             csv_output.writerows(object_labels)
             print('writing csv file to ' + out_filename)
+            '''
 
 
 
@@ -325,9 +352,9 @@ if __name__ == '__main__':
     ' when executed as a script, open a GUI window to select the presented TFrecord file '
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
-    data_dir = filedialog.askdirectory()
+    data_dir = filedialog.askdirectory(initidir = '/media/vision/DataRepo/')
 
     #data_dir = 'annotated' # TEMPORARY !!!!!!
     print('Convert to TFrecords all annotated images within - ' + data_dir + ':')
 
-    main(data_dir, True) # True saves a control image to a control directory
+    main(data_dir, params.image_width, True) # True saves a control image to a control directory

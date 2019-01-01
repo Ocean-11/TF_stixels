@@ -1,4 +1,22 @@
 
+'''
+*
+* model
+*
+* Purpose: the module implements a MobileNetV2 stixels model
+*
+* Inputs:
+*
+*
+* Outputs:
+*
+*
+* Conventions: (x=0, y=0) is the upper left corner of the image
+*
+* Written by: Ran Zaslavsky 10-12-2018 (framework originates from excellent https://crosleythomas.github.io/blog/)
+*
+'''
+
 import tensorflow as tf
 from tensorflow.contrib.layers.python.layers import utils
 
@@ -177,9 +195,9 @@ def MobileNetV2(inputs, k, is_training):
 
     x = _inverted_residual_block(inputs=x, filters=16, kernel=(3, 3), t=1, strides=1, n=1, is_training=is_training)
     x = _inverted_residual_block(inputs=x, filters=24, kernel=(3, 3), t=6, strides=2, n=2, is_training=is_training)
-    x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None) # RAN
+    #x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None) # RAN - adding dropout
     x = _inverted_residual_block(inputs=x, filters=32, kernel=(3, 3), t=6, strides=2, n=3, is_training=is_training)
-    x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None)  # RAN
+    #x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None)  # RAN - adding dropout
     x = _inverted_residual_block(inputs=x, filters=64, kernel=(3, 3), t=6, strides=2, n=4, is_training=is_training)
     x = _inverted_residual_block(inputs=x, filters=96, kernel=(3, 3), t=6, strides=1, n=3, is_training=is_training)
 
@@ -224,7 +242,7 @@ def MobileNetV2(inputs, k, is_training):
 *
 '''
 
-# params
+# params - defining the stixel dimensions for the entire toolchain (RAN)
 H = 370
 W = 24
 C = 3
@@ -340,10 +358,10 @@ def parse(serialized):
 
 params = tf.contrib.training.HParams(
     learning_rate=0.001,
-    train_epochs=250,
+    train_epochs=100,
     batch_size=32,
     image_height=370,
-    image_width=24,
+    image_width=W,
     image_depth=3
 )
 
