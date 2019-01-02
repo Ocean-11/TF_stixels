@@ -22,15 +22,44 @@ import os
 import shutil
 from tensorflow.python import debug as tf_debug # RAN
 
+######################################################
+### Define InitHook to support single warm startup ###
+######################################################
+
+# based on - https://stackoverflow.com/questions/49846207/tensorflow-estimator-warm-start-from-and-model-dir
+
+class InitHook(tf.train.SessionRunHook):
+    """initializes model from a checkpoint_path
+    args:
+        modelPath: full path to checkpoint
+    """
+    def __init__(self, checkpoint_dir):
+        self.modelPath = checkpoint_dir
+        self.initialized = False
+
+    def begin(self):
+        """
+        Restore encoder parameters if a pre-trained encoder model is available and we haven't trained previously
+        """
+        if not self.initialized:
+            log = tf.logging.getLogger('tensorflow')
+            checkpoint = tf.train.latest_checkpoint(self.modelPath)
+            if checkpoint is None:
+                log.info('No pre-trained model is available, training from scratch.')
+            else:
+                log.info('Pre-trained model {0} found in {1} - warmstarting.'.format(checkpoint, self.modelPath))
+                tf.train.warm_start(checkpoint)
+            self.initialized = True
+
 
 #############################
 ###   Gather Saved Data   ###
 #############################
 
 
-train_dir = '../data/Dataset_4/train'
-valid_dir = '../data/Dataset_4/valid'
-test_dir = '../data/Dataset_4/test'
+train_dir = '../data/Dataset_5/train'
+valid_dir = '../data/Dataset_5/valid'
+test_dir = '../data/Dataset_5/test'
 
 '''
 train_dir = '../data/Dataset_3/train'
@@ -137,11 +166,23 @@ timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
 model_dir = '../results/' + timestamp + '_EP_' + str(params.train_epochs)
 #print(model_dir)
 
+
 #############################
 ###    Define Estimator   ###
 #############################
 
 estimator = tf.estimator.Estimator(model_fn=model_fn, model_dir=model_dir, config=config, params=params)
+
+'''
+# Code for warm start - does not work properly at initializes the variables on every epoch!!! 
+warm_start_path = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_14-48-55_EP_100'
+estimator = tf.estimator.Estimator(model_fn=model_fn,
+                                   model_dir=model_dir,
+                                   config=config,
+                                   params=params, 
+                                   warm_start_from=warm_start_path)
+'''
+
 
 ##########################
 ###   Copy File Over   ###
@@ -176,3 +217,21 @@ for e in range(params.train_epochs):
     estimator.evaluate(input_fn=lambda: dataset_input_fn('valid'))
 
 print('tensorboard --logdir=' + str(model_dir))
+
+'''
+' Code for warm start: '
+warm_start_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_14-48-55_EP_100'
+initHook = InitHook(checkpoint_dir = warm_start_dir)
+trainSpec = tf.estimator.TrainSpec(
+    input_fn = train_input_fn,
+    max_steps = N_STEPS, 
+    hooks = [initHook]
+)
+evalSpec = tf.estimator.EvalSpec(
+    input_fn = eval_input_fn,
+    steps = None,
+    name = 'eval',
+    throttle_secs = 3600
+)
+tf.estimator.train_and_evaluate(estimator, trainSpec, evalSpec)
+'''

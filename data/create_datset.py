@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
     data_dir = '/media/vision/DataRepo'
     #data_dir = '/media/vision/temp_DataRepo'
-    target_dir = '/media/vision/Datasets/Dataset_4'
+    target_dir = '/media/vision/Datasets/Dataset_5'
 
     #data_dir = 'annotated' # TEMPORARY !!!!!!
     print('Extract files from DataRepo - ' + data_dir + ':')

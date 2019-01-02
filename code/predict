@@ -181,18 +181,21 @@ W = params.image_width
 #W = 24
 C = 3
 
-#test_dir = '../data/annotated/tfrecord/test'
-#test_file = '/media/vision/Datasets/Dataset_4/test/train_img_NE1_Site40 Normal frame_000001_test_W24.tfrecord'
-test_file = '/media/vision/Datasets/Dataset_4/test/NE1_UKSite4GC frame_89_original_roi_gc_test_W24.tfrecord'
 #test_files = glob.glob(test_dir + '/*.tfrecord')
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000088_test.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000373_test.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000041_test.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000194_test.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000464_test.tfrecord'
+
+#test_dir = '../data/annotated/tfrecord/test'
+test_file = '/media/vision/Datasets/Dataset_5/test/NE1_GC23-Normal_part frame_001352_test_W24.tfrecord'
+
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test/NE1_Garden8 frame_000973_test_W24.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test/NE1_Garden8 frame_000997_test_W24.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test/NE1_GC23-Normal_part frame_001352_test_W24.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test/NE1_GC23-Normal_part frame_001353_test_W24.tfrecord'
+#test_file = '/media/vision/Datasets/Dataset_4/test/NE1_UKSite4GC frame_89_original_roi_gc_test_W24.tfrecord'
 #test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_Site40 Normal frame_000001_test_W24.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_SegmentedNE image_01_test_W24.tfrecord'
 #test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_GC23-Normal_part frame_000012_test_W24.tfrecord'
+
+# Benchmark photo:
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_SegmentedNE image_01_test_W24.tfrecord'
 
 
 # Now make all these files accessible depending on whether we
@@ -211,7 +214,9 @@ tf.logging.set_verbosity(tf.logging.INFO) # possible values - DEBUG / INFO / WAR
 from model import model_fn, params
 
 # Determine the model to be used for inference
-model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_12-10-42_EP_100'
+model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_17-15-25_EP_500'
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_14-48-55_EP_100'
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_12-10-42_EP_100'
 #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-27_23-38-49_EP_1000'
 #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_17-01-07_LR_0.001_EP_1000'
 #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_12-36-12_LR_0.001_EP_250'

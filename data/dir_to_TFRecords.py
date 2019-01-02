@@ -4,7 +4,7 @@
 *
 * Purpose: the module receives a directory name, creates train/valid/test/control/meta_data
 *          folders, and scans it's "annotated" folder, translating annotated images into
-*          stixels TFrecords. Note that lowest bound limit stixels diluted by a factor of 4
+*          stixels TFrecords. Note that lowest bound limit stixels diluted by a factor of 2
 *          to reduce classification bias
 *
 *
@@ -158,13 +158,26 @@ class Frame2StxTfrecords:
 
             'translate from absolute GT coordinates to stixel coordinates and translate to label'
             stx_GT_y -= diff_h
+            if (stx_GT_y < -5):
+                ' border higher than 5 pixels - skip '
+                stx_GT_y = 0
+                for_use = 0
+            elif (stx_GT_y < 0):
+                ' label as "0" '
+                stx_GT_y = 0
+                for_use = 1
+            else:
+                for_use = 1
+
+            '''
             if (stx_GT_y < 0): # RAN - 31-12-18
-            #if (stx_GT_y <= 0):
                 'no border in stixel range'
                 stx_GT_y = 0
                 for_use = 0
             else:
                 for_use = 1
+            '''
+
             stx_label = np.floor_divide(stx_GT_y, 5)
             #print('stixel GT value = {}, use={}'.format(stx_label,for_use))
 
@@ -177,7 +190,7 @@ class Frame2StxTfrecords:
             plt.draw()
 
             ' dilute the amount of lower end border Stixels by a factor of 1:4'
-            dilution_factor = 4
+            dilution_factor = 2
             if (stx_label == 73):
                 p_label = random.randint(1,dilution_factor + 1)
                 #print('prob = {}'.format(p_label))

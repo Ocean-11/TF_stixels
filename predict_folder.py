@@ -12,7 +12,13 @@ from tkinter import filedialog
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 
-from model import params
+from model import model_fn, params
+
+# params
+H = 370
+W = params.image_width
+C = 3
+
 
 
 
@@ -33,10 +39,10 @@ from model import params
 '''
 
 
-def dataset_input_fn(mode):
+def dataset_input_fn(mode, data_files):
     # Function that does the heavy lifting for constructing a Dataset
     #    depending on the current mode of execution
-    dataset = load_dataset(mode)
+    dataset = load_dataset(mode,data_files)
     # Making an iterator that runs from start to finish once
     #    (the preferred type for Estimators)
     iterator = dataset.make_one_shot_iterator()
@@ -60,7 +66,7 @@ def dataset_input_fn(mode):
 '''
 
 
-def load_dataset(mode):
+def load_dataset(mode, data_files):
     # Taking either the train or validation files from the dictionary we constructed above
     files = data_files[mode]
     # Created a Dataset from our list of TFRecord files
@@ -105,11 +111,10 @@ def parse(serialized):
     return {'image': image}, label
 
 
-
-
 def visualize_pred(tfrecord_file, predictions_list, model_dir):
     # define the output folder
-    output_folder = os.path.dirname(os.path.abspath(tfrecord_file))
+    model_dirname = os.path.basename(model_dir)
+    output_folder = os.path.dirname(os.path.abspath(tfrecord_file)) + '/' + model_dirname
     image_name = os.path.basename(tfrecord_file)
 
     # reset tf graph
@@ -161,113 +166,71 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
             #plt.plot(12 + 5 * (index-1), predictions_list[index] * 5, marker='o', markersize=4, color="red")
             plt.draw()
 
-        model_dirname = os.path.basename(model_dir)
-        print(model_dirname)
-        image_save_name = image_name.replace('.tfrecord', '') + '_prediction_' + model_dirname + '.jpg'
+        image_save_name = image_name.replace('.tfrecord', '___Model_') + model_dirname + '.jpg'
+        #image_save_name = image_name.replace('.tfrecord', '') + '_prediction_' + model_dirname + '.jpg'
         print(image_save_name)
-        plt.savefig(os.path.join(output_folder, image_name + '_prediction_' + model_dirname + '.jpg'))
-        plt.show()
+        plt.savefig(os.path.join(output_folder, image_save_name))
+        #plt.show()
         plt.close()
 
 
-def main(data_dir, stixel_width, isControl = True)
+def main(test_dir, model_dir):
 
+    #############################
+    ###    Define test file   ###
+    #############################
 
-#############################
-###    Define test file   ###
-#############################
+    # RAN - Setup logger - only displays the most important warnings
+    tf.logging.set_verbosity(tf.logging.INFO)  # possible values - DEBUG / INFO / WARN / ERROR / FATAL
 
-# params
-H = 370
-W = params.image_width
-#W = 24
-C = 3
+    # Load the model
+    estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
 
-#test_dir = '../data/annotated/tfrecord/test'
-#test_files = glob.glob(test_dir + '/*.tfrecord')
-test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000041_test.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000373_test.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000041_test.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000194_test.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images/Garden8 frame_000464_test.tfrecord'
+    ' Create new directory to save prediction annotated images '
+    model_dirname = os.path.basename(model_dir)
+    # Create required folders
+    if not os.path.exists(test_dir + '/' + model_dirname) and not os.path.isdir(test_dir + '/' + model_dirname):
+        os.mkdir(test_dir + '/' + model_dirname)
 
-# Now make all these files accessible depending on whether we
-#    are in training ('train') or validation ('valid') mode.
-data_files = {'test' : test_file}
+    test_files = glob.glob(test_dir + '/*.tfrecord')
 
-#plt.style.use("seaborn-colorblind")
-# RAN - Setup logger - only displays the most important warnings
-tf.logging.set_verbosity(tf.logging.INFO) # possible values - DEBUG / INFO / WARN / ERROR / FATAL
+    for test_file in test_files:
+        print(test_file)
 
-#############################
-###    Define Estimator   ###
-#############################
+        # Now make all these files accessible depending on whether we
+        #    are in training ('train') or validation ('valid') mode.
+        data_files = {'test' : test_file}
 
+        # Prepare hooks for debugging
+        hooks = [tf_debug.TensorBoardDebugHook(grpc_debug_server_addresses="dev:6064")]
 
-from model import model_fn, params
+        predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test',data_files))
+        #predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'), hooks = hooks)
 
-# Determine the model to be used for inference
-model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_17-01-07_LR_0.001_EP_1000'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_12-36-12_LR_0.001_EP_250'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_10-34-21_LR_0.001_EP_50'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-25_11-36-29_LR_0.001_EP_50'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_21-02-30_LR_0.001_EP_100'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_18-08-15_LR_0.001_EP_100'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_16-04-28_LR_0.001_EP_50'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_15-14-08LR_0.01EP_50' #0.01LR, 50epochs
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-23_20-23-40' # 250 epochs, relu6
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-19_09-51-38' # 100 epochs + using relu6
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-17_18-33-01' # 1000 epochs + using leakyrelu
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-18_13-07-00' # 100 epochs + using relu6 + data normailization
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-16_17-39-06' # 25 epochs + using leakyrelu
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-16_14-58-28'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-19_09-51-38' # 100 epochs + using relu6
-# Load the model
-estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
+        # Predict!
+        predictions_list = []
+        predictions_list = list(predictions)
+        predicted_label = predictions_list[0]
+        #print('prediction = {}'.format(predicted_label))
 
-# Create the input_fn
-#input_fn = tf.estimator.inputs.numpy_input_fn(x={'image' : inputs}, num_epochs=1, shuffle=False)
+        # Visualize predictions based on single test TFrecord
+        visualize_pred(test_file, predictions_list, model_dir)
 
-##############################
-###    Perform inference   ###
-##############################
+    # Print tensorboard data
+    print('tensorboard --logdir=' + str(model_dir) + '--port 6006 --debugger_port 6064')
 
-# Prepare hooks for debugging
-hooks = [tf_debug.TensorBoardDebugHook(grpc_debug_server_addresses="dev:6064")]
-
-predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'))
-#predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'), hooks = hooks)
-
-# Predict!
-predictions_list = []
-predictions_list = list(predictions)
-'''
-for pred in predictions_list:
-    print(pred)
-    '''
-predicted_label = predictions_list[0]
-print('prediction = {}'.format(predicted_label))
-#print('max = {}'.format(predictions_list[np.argmax(predictions_list)]))
-
-# Print tensorboard data
-print('tensorboard --logdir=' + str(model_dir) + '--port 6006 --debugger_port 6064')
-
-# Visualize predictions based on single test TFrecord
-visualize_pred(test_file, predictions_list, model_dir)
 
 
 if __name__ == '__main__':
 
-    ' when executed as a script, open a GUI window to select the presented TFrecord file '
-    '''
+    #test_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test'
+    test_dir = '/media/vision/Datasets/Dataset_5/test'
+
+    ' Determine the model to be used for inference '
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
-    data_dir = filedialog.askdirectory()
-    '''
+    model_dir = filedialog.askdirectory(initialdir='/home/dev/PycharmProjects/stixel/TF_stixels/results')
+    root.destroy()
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_17-01-07_LR_0.001_EP_1000'
 
-    data_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/data/test_images'
-
-    #data_dir = 'annotated' # TEMPORARY !!!!!!
-    print('Go through test TFrecords in - ' + data_dir + ':')
-
-    #main(data_dir, params.image_width)
+    main(test_dir, model_dir)

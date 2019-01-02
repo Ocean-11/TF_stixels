@@ -20,13 +20,9 @@ from matplotlib import get_backend
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 import csv
+import sys
 
-root = tk.Tk()
-root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
-image_filename = askopenfilename()  # show an "Open" dialog box and return the path to the selected file
-print('image file - ' + image_filename)
-
-if os.path.isfile(image_filename):
+def show_image(image_filename):
 
     img = mpimg.imread(image_filename)
     fig, ax = plt.subplots()
@@ -35,9 +31,6 @@ if os.path.isfile(image_filename):
     print('matplotlib backend: ' + get_backend())
     figManager = plt.get_current_fig_manager()
     figManager.window.state('iconic')  # maximize for TkAgg backend python 3.5
-    #figManager.window.state('zoomed')  # maximize for TkAgg backend
-    # figManager.window.showMaximized() # maximize for spider backend
-
     ax.imshow(img)
 
     'read the annotation file and draw the border lines'
@@ -64,7 +57,8 @@ if os.path.isfile(image_filename):
     print(coords)
     plt.plot(x, y, 'b-')
     plt.show()
-    print('image shown')
+    plt.close()
+    quit()
 
     '''
     plt.plot([x_coord], [y_coord], marker='o', markersize=3, color="red")
@@ -74,5 +68,22 @@ if os.path.isfile(image_filename):
     plt.draw()                          
     '''
 
-else:
-    print('not an image file')
+def main():
+
+    ' Choose a jpg image to show '
+    root = tk.Tk()
+    root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
+    image_filename = askopenfilename(initialdir='/media/vision/DataRepo')  # show an "Open" dialog box and return the path to the selected file
+    print('image file - ' + image_filename)
+    root.destroy() # destroy the root window at the end of openFile to allow the script to close
+
+    ' call show image to display the image + annotations'
+    if os.path.isfile(image_filename):
+        show_image(image_filename)
+        quit()
+    else:
+        print('not an image file')
+
+
+if __name__ == '__main__':
+    main()

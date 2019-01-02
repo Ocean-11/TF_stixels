@@ -358,7 +358,7 @@ def parse(serialized):
 
 params = tf.contrib.training.HParams(
     learning_rate=0.001,
-    train_epochs=100,
+    train_epochs=500,
     batch_size=32,
     image_height=370,
     image_width=W,
