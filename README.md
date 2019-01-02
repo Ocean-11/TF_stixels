@@ -14,12 +14,10 @@ annotate_new_image()
 show_image_annotations()
 *   The script selects an image, opens the accompanying CSV annotations file and displays the annotations on top of the image
 
-images_dir_to_tfrecords() 
-*   The module receives a directory name, scans it's subdirectories and places annotated stixels within train/valid TFrecords files
+folder2tTFRec()
+*   The module receives a directory name, creates train/valid/test/control/meta_data olders, and scans it's "annotated" folder, translating annotated images into train/valid/test TFrecords. Control images and meta_data are also saved
 
 ## code folder
-dir_to_tfrecords()
-*   The module receives a directory name, creates train/valid/test/control/meta_data olders, and scans it's "annotated" folder, translating annotated images into train/valid/test TFrecords. Control images and meta_data are also saved
 
 create_dataset()
 *   copy train/valid/test/meta_data from a specified directory (built in a required structure to an output "Dataset" directory.
@@ -29,4 +27,7 @@ train()
 
 model()
 *   the module implements a MobileNetV2 stixels model
+
+predict_folder()
+* the module selects a trained model directory, scans a test images directory and annotates the images with both labels & predictions
                    
