@@ -1,19 +1,66 @@
 import tensorflow as tf
 import os
 import numpy as np
-from TF_stixels.code.model import model_fn, params
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 from tensorflow.python import debug as tf_debug # for debugging
-import glob
 from PIL import Image
-from tkinter import filedialog
+import sys
 
-import tkinter as tk
-from tkinter.filedialog import askopenfilename
+# params
+H = 370
+W = 24 # To be updated later on based on the saved model
+C = 3
 
-from model import params
+#######################################
+###   Define model & test image     ###
+#######################################
 
+# Determine the model to be used for inference
+
+model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-07_21-42-15_EP_200'
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_16-04-28_LR_0.001_EP_50'
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_15-14-08LR_0.01EP_50' #0.01LR, 50epochs
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-23_20-23-40' # 250 epochs, relu6
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-19_09-51-38' # 100 epochs + using relu6
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-17_18-33-01' # 1000 epochs + using leakyrelu
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-18_13-07-00' # 100 epochs + using relu6 + data normailization
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-16_17-39-06' # 25 epochs + using leakyrelu
+#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-19_09-51-38' # 100 epochs + using relu6
+
+# Use model.py that was saved in model directory
+os.chdir(model_dir)
+sys.path.insert(0, os.getcwd())
+
+from model import model_fn, params
+W = params.image_width
+#print ('Stixel width to be used is: {}'.format(W))
+
+#test_dir = '../data/annotated/tfrecord/test'
+test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_10_W36/test/NE1_NLSite2 frame_866_original_roi_gc_test_W36.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_10_W36/test/NE1_Garden8 frame_000194_test_W36.tfrecord'
+#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_SegmentedNE image_01_test_W24.tfrecord'
+
+# Make sure test file stixels width are compatible with the model stixels width
+test_file_name = test_file.split('/')[-1]
+test_file_name = test_file_name.split(('.')[0])
+test_file_name = test_file_name[0]
+test_file_stixel_width = int(test_file_name.split('W')[-1])
+
+if test_file_stixel_width != W:
+    print('test image does not match the model stixels width!!!')
+    sys.exit()
+
+
+#test_width_str = re.search('.tfrecord', test_file_name)
+#print(test_width_str[0])
+
+# Now make all these files accessible depending on whether we
+#    are in training ('train') or validation ('valid') mode.
+data_files = {'test' : test_file}
+
+#plt.style.use("seaborn-colorblind")
+# RAN - Setup logger - only displays the most important warnings
+tf.logging.set_verbosity(tf.logging.INFO) # possible values - DEBUG / INFO / WARN / ERROR / FATAL
 
 
 #######################################
@@ -139,6 +186,7 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
             image_data = sess.run(next_image_data)
             image = image_data[0]['image']
             im = Image.fromarray(np.uint8(image))
+            #print(im.size)
             label = image_data[1]
             labels.append(label)
             #print('label = {}, prediction = {}'.format(label, prediction))
@@ -171,68 +219,12 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
 
 
 
-#############################
-###    Define test file   ###
-#############################
 
-# params
-H = 370
-W = params.image_width
-#W = 24
-C = 3
-
-#test_files = glob.glob(test_dir + '/*.tfrecord')
-
-#test_dir = '../data/annotated/tfrecord/test'
-test_file = '/media/vision/Datasets/Dataset_5/test/NE1_GC23-Normal_part frame_001352_test_W24.tfrecord'
-
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test/NE1_Garden8 frame_000973_test_W24.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test/NE1_Garden8 frame_000997_test_W24.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test/NE1_GC23-Normal_part frame_001352_test_W24.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test/NE1_GC23-Normal_part frame_001353_test_W24.tfrecord'
-#test_file = '/media/vision/Datasets/Dataset_4/test/NE1_UKSite4GC frame_89_original_roi_gc_test_W24.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_Site40 Normal frame_000001_test_W24.tfrecord'
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_GC23-Normal_part frame_000012_test_W24.tfrecord'
-
-# Benchmark photo:
-#test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_2/test/train_img_NE1_SegmentedNE image_01_test_W24.tfrecord'
-
-
-# Now make all these files accessible depending on whether we
-#    are in training ('train') or validation ('valid') mode.
-data_files = {'test' : test_file}
-
-#plt.style.use("seaborn-colorblind")
-# RAN - Setup logger - only displays the most important warnings
-tf.logging.set_verbosity(tf.logging.INFO) # possible values - DEBUG / INFO / WARN / ERROR / FATAL
 
 #############################
 ###    Define Estimator   ###
 #############################
 
-
-from model import model_fn, params
-
-# Determine the model to be used for inference
-model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_17-15-25_EP_500'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_14-48-55_EP_100'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-01_12-10-42_EP_100'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-27_23-38-49_EP_1000'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_17-01-07_LR_0.001_EP_1000'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_12-36-12_LR_0.001_EP_250'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_10-34-21_LR_0.001_EP_50'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-25_11-36-29_LR_0.001_EP_50'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_21-02-30_LR_0.001_EP_100'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_18-08-15_LR_0.001_EP_100'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_16-04-28_LR_0.001_EP_50'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_15-14-08LR_0.01EP_50' #0.01LR, 50epochs
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-23_20-23-40' # 250 epochs, relu6
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-19_09-51-38' # 100 epochs + using relu6
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-17_18-33-01' # 1000 epochs + using leakyrelu
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-18_13-07-00' # 100 epochs + using relu6 + data normailization
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-16_17-39-06' # 25 epochs + using leakyrelu
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-16_14-58-28'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-19_09-51-38' # 100 epochs + using relu6
 # Load the model
 estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
 
@@ -261,7 +253,7 @@ print('prediction = {}'.format(predicted_label))
 #print('max = {}'.format(predictions_list[np.argmax(predictions_list)]))
 
 # Print tensorboard data
-print('tensorboard --logdir=' + str(model_dir) + '--port 6006 --debugger_port 6064')
+print('tensorboard --logdir=' + str(model_dir) + ' --port 6006 --debugger_port 6064')
 
 # Visualize predictions based on single test TFrecord
 visualize_pred(test_file, predictions_list, model_dir)

@@ -19,6 +19,12 @@
 
 import tensorflow as tf
 from tensorflow.contrib.layers.python.layers import utils
+import os
+
+# params - defining the stixel dimensions for the entire toolchain (RAN)
+H = 370
+W = 36 # was 24
+C = 3
 
 ' the next four cells are a modification of https://github.com/xiaochus/MobileNetV2/blob/master/mobilenet_v2.py '
 
@@ -191,15 +197,21 @@ def _inverted_residual_block(inputs, filters, kernel, t, strides, n, is_training
 
 def MobileNetV2(inputs, k, is_training):
 
-    x = _conv_block(inputs=inputs, filters=32, kernel=(3, 3), strides=(2, 2), is_training=is_training)
+    with tf.variable_scope('Conv-block'):
+        x = _conv_block(inputs=inputs, filters=32, kernel=(3, 3), strides=(2, 2), is_training=is_training)
 
-    x = _inverted_residual_block(inputs=x, filters=16, kernel=(3, 3), t=1, strides=1, n=1, is_training=is_training)
-    x = _inverted_residual_block(inputs=x, filters=24, kernel=(3, 3), t=6, strides=2, n=2, is_training=is_training)
-    #x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None) # RAN - adding dropout
-    x = _inverted_residual_block(inputs=x, filters=32, kernel=(3, 3), t=6, strides=2, n=3, is_training=is_training)
-    #x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None)  # RAN - adding dropout
-    x = _inverted_residual_block(inputs=x, filters=64, kernel=(3, 3), t=6, strides=2, n=4, is_training=is_training)
-    x = _inverted_residual_block(inputs=x, filters=96, kernel=(3, 3), t=6, strides=1, n=3, is_training=is_training)
+    with tf.variable_scope("IRblock-1"):
+        x = _inverted_residual_block(inputs=x, filters=16, kernel=(3, 3), t=1, strides=1, n=1, is_training=is_training)
+    with tf.variable_scope("IRblock-2"):
+        x = _inverted_residual_block(inputs=x, filters=24, kernel=(3, 3), t=6, strides=2, n=2, is_training=is_training)
+        x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None) # RAN - adding dropout
+    with tf.variable_scope("IRblock-3"):
+        x = _inverted_residual_block(inputs=x, filters=32, kernel=(3, 3), t=6, strides=2, n=3, is_training=is_training)
+        x = tf.layers.dropout(inputs=x, rate=0.5, noise_shape=None, seed=None, training=is_training, name=None)  # RAN - adding dropout
+    with tf.variable_scope("IRblock-4"):
+        x = _inverted_residual_block(inputs=x, filters=64, kernel=(3, 3), t=6, strides=2, n=4, is_training=is_training)
+    with tf.variable_scope("IRblock-5"):
+        x = _inverted_residual_block(inputs=x, filters=96, kernel=(3, 3), t=6, strides=1, n=3, is_training=is_training)
 
     x = tf.layers.average_pooling2d(inputs=x, pool_size=(24, 2), strides=(1, 1))
 
@@ -242,10 +254,7 @@ def MobileNetV2(inputs, k, is_training):
 *
 '''
 
-# params - defining the stixel dimensions for the entire toolchain (RAN)
-H = 370
-W = 24
-C = 3
+
 
 def model_fn(features, labels, mode, params):
 
@@ -259,12 +268,15 @@ def model_fn(features, labels, mode, params):
 
 
     # Reference to the tensor named "image" in the input-function.
-    x = features["image"]
-    # Reshape from 2-rank tensor to a 4-rank tensor expected by the convolutional layers
-    inputs = tf.reshape(x, [-1, H, W, C])
+    with tf.variable_scope('Reshape'):
+        x = features["image"]
+        # Reshape from 2-rank tensor to a 4-rank tensor expected by the convolutional layers
+        x_image = tf.reshape(x, [-1, H, W, C])
+        #inputs = tf.reshape(x, [-1, H, W, C])
 
     # 1. Define model structure
-    net = MobileNetV2(inputs=inputs, k=74, is_training=is_training) # RAN changed k to 74 (0-73) - temporary!!!!!
+    with tf.variable_scope('mobilenetV2'):
+        net = MobileNetV2(inputs=x_image, k=74, is_training=is_training) # RAN changed k to 74 (0-73) - temporary!!!!!
     #net = MobileNetV2(inputs=inputs, k=73, is_training=is_training)
 
     # Logits output of the neural network.
@@ -282,43 +294,45 @@ def model_fn(features, labels, mode, params):
 
     # 3. Define the loss functions
 
-    # calculate the cross-entropy between the output of
-    # the neural network and the true labels for the input data.
-    # This gives the cross-entropy for each image in the batch.
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        labels=labels,
-        logits=logits)
+    with tf.variable_scope("xent"):
+        # calculate the cross-entropy between the output of
+        # the neural network and the true labels for the input data.
+        # This gives the cross-entropy for each image in the batch.
+        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=labels,
+            logits=logits)
 
-    # Reduce the cross-entropy batch-tensor to a single number
-    # which can be used in optimization of the neural network.
-    tf.argmax(logits)
+        # Reduce the cross-entropy batch-tensor to a single number
+        # which can be used in optimization of the neural network.
+        tf.argmax(logits)
 
-    loss = tf.reduce_mean(cross_entropy)
+        loss = tf.reduce_mean(cross_entropy)
 
     # 3.1 Additional metrics for monitoring (in this case the classification accuracy)
-    metrics = {"accuracy": tf.metrics.accuracy(
-        labels, y_pred_cls)}
+    with tf.variable_scope("accuracy"):
+        metrics = {"accuracy": tf.metrics.accuracy(
+            labels, y_pred_cls)}
 
     # 4. Define optimizer
-    lr = params.learning_rate
-    #lr = 1e-4 # RAN - original StixelNET value
-    step_rate = 20000
-    #step_rate = 5000 # original StixelNET value
-    decay = 0.95 # try to break the 0.23 accuracy barrier ...
-    #decay = 0.7  # if this equals 1 the lr stays the same (original StixelNET value)
-    learning_rate = tf.train.exponential_decay(
-        lr, global_step=tf.train.get_or_create_global_step(),
-        decay_steps=step_rate,
-        decay_rate=decay,
-        staircase=True)
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    with tf.variable_scope("train"):
+        lr = params.learning_rate
+        #lr = 1e-4 # RAN - original StixelNET value
+        step_rate = 20000
+        #step_rate = 5000 # original StixelNET value
+        decay = 0.95 # try to break the 0.23 accuracy barrier ...
+        #decay = 0.7  # if this equals 1 the lr stays the same (original StixelNET value)
+        learning_rate = tf.train.exponential_decay(
+            lr, global_step=tf.train.get_or_create_global_step(),
+            decay_steps=step_rate,
+            decay_rate=decay,
+            staircase=True)
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        #print('Learning rate = {}'.format(learning_rate))
 
-    print('Learning rate = {}'.format(learning_rate))
-
-    # for learning parameters of batch normalization:
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    with tf.control_dependencies(update_ops):
-        train_op = optimizer.minimize(loss, global_step=tf.train.get_or_create_global_step())
+        # for learning parameters of batch normalization:
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            train_op = optimizer.minimize(loss, global_step=tf.train.get_or_create_global_step())
 
     # 5. Return training/evaluation EstimatorSpec
     spec = tf.estimator.EstimatorSpec(
@@ -327,6 +341,17 @@ def model_fn(features, labels, mode, params):
         train_op=train_op,
         eval_metric_ops=metrics)
     tf.summary.scalar("accuracy", metrics["accuracy"][1])
+    tf.summary.scalar("loss", loss)
+    '''
+    with tf.Session() as sess:
+        print('Loss & accuracy = ' )
+        print(sess.run(loss))
+        print(sess.run(metrics["accuracy"][1]))
+    '''
+    #print('Loss = {} accuracy = {}'.format(loss, metrics["accuracy"][1]))
+    tf.summary.image('input', x_image, 1)
+    for var in tf.trainable_variables():
+        tf.summary.histogram(var.name, var)
     return spec
 
 #######################################
@@ -358,7 +383,7 @@ def parse(serialized):
 
 params = tf.contrib.training.HParams(
     learning_rate=0.001,
-    train_epochs=500,
+    train_epochs=200,
     batch_size=32,
     image_height=370,
     image_width=W,
