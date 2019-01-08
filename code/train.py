@@ -21,6 +21,7 @@ import glob
 import os
 import shutil
 from tensorflow.python import debug as tf_debug # RAN
+import sys
 
 ######################################################
 ### Define InitHook to support single warm startup ###
@@ -56,22 +57,17 @@ class InitHook(tf.train.SessionRunHook):
 ###   Gather Saved Data   ###
 #############################
 
-
-train_dir = '../data/Dataset_5/train'
-valid_dir = '../data/Dataset_5/valid'
-test_dir = '../data/Dataset_5/test'
-
-'''
-train_dir = '../data/Dataset_3/train'
-valid_dir = '../data/Dataset_3/valid'
-test_dir = '../data/Dataset_3/test'
-'''
+dataset_dir = '/Dataset_10_W36'
+train_dir = '../data' + dataset_dir + '/train'
+valid_dir = '../data' + dataset_dir + '/valid'
+test_dir = '../data' + dataset_dir + '/test'
 
 '''
-train_dir = '../data/annotated/tfrecords/train'
-valid_dir = '../data/annotated/tfrecords/valid'
-test_dir = '../data/annotated/tfrecord/test'
+train_dir = '../data/Dataset_8/train'
+valid_dir = '../data/Dataset_8/valid'
+test_dir = '../data/Dataset_8/test'
 '''
+
 '''
 train_dir = '../data/tfrecords/train'
 valid_dir = '../data/tfrecords/valid'
@@ -92,6 +88,7 @@ data_files = {'train' : train_files, 'valid' : valid_files, 'test' : test_files}
 #plt.style.use("seaborn-colorblind")
 # RAN - Setup logger - only displays the most important warnings
 tf.logging.set_verbosity(tf.logging.INFO) # possible values - DEBUG / INFO / WARN / ERROR / FATAL
+#tf.logging.set_verbosity(tf.logging.INFO)
 
 #######################################
 ###   Creating a dataset_input_fn   ###
@@ -146,7 +143,8 @@ def load_dataset(mode):
     # buffer_size determines how large the buffer of records we will shuffle
     #    is, (larger is better!) but be wary of your memory capacity.
     if mode == 'train':
-        dataset = dataset.shuffle(buffer_size=1000)
+        dataset = dataset.shuffle(buffer_size=2000) # RAN 07-01-2019
+        #dataset = dataset.shuffle(buffer_size=1000)
     # Batch the data - you can pick a batch size, maybe 32, and later
     #    we will include this in a dictionary of other hyper parameters.
     dataset = dataset.batch(params.batch_size)
@@ -155,7 +153,7 @@ def load_dataset(mode):
 
 ###################################
 ###   Define Output Directory   ###
-###################################
+###################################y
 
 import time, datetime
 from model import model_fn, params, config, parse
@@ -166,6 +164,16 @@ timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
 model_dir = '../results/' + timestamp + '_EP_' + str(params.train_epochs)
 #print(model_dir)
 
+# Make sure test file stixels width are compatible with the model stixels width
+file_name = train_files[0]
+file_name = file_name.split('/')[-1]
+file_name = file_name.split(('.')[0])
+file_name = file_name[0]
+train_file_stixel_width = int(file_name.split('W')[-1])
+
+if train_file_stixel_width != params.image_width:
+    print('train images do not match the model stixels width!!!')
+    sys.exit()
 
 #############################
 ###    Define Estimator   ###
@@ -183,6 +191,17 @@ estimator = tf.estimator.Estimator(model_fn=model_fn,
                                    warm_start_from=warm_start_path)
 '''
 
+'''
+def initialize_uninitialized(sess):
+    global_vars          = tf.global_variables()
+    is_not_initialized   = sess.run([tf.is_variable_initialized(var) for var in global_vars])
+    not_initialized_vars = [v for (v, f) in zip(global_vars, is_not_initialized) if not f]
+
+    print [str(i.name) for i in not_initialized_vars] # only for testing
+    if len(not_initialized_vars):
+        sess.run(tf.variables_initializer(not_initialized_vars))
+
+'''
 
 ##########################
 ###   Copy File Over   ###
@@ -234,4 +253,24 @@ evalSpec = tf.estimator.EvalSpec(
     throttle_secs = 3600
 )
 tf.estimator.train_and_evaluate(estimator, trainSpec, evalSpec)
+'''
+
+'''
+experiment = tf.contrib.learn.Experiment(
+    estimator=estimator,  # Estimator
+    train_input_fn=train_input_fn,  # First-class function
+    eval_input_fn=eval_input_fn,  # First-class function
+    train_steps=params.train_steps,  # Minibatch steps
+    min_eval_frequency=params.min_eval_frequency,  # Eval frequency
+    train_monitors=[train_input_hook],  # Hooks for training
+    eval_hooks=[eval_input_hook],  # Hooks for evaluation
+    eval_steps=None  # Use evaluation feeder until its empty
+)
+
+learn_runner.run(
+    experiment_fn=experiment_fn,  # First-class function
+    run_config=run_config,  # RunConfig
+    schedule="train_and_evaluate",  # What to run
+    hparams=params  # HParams
+)
 '''

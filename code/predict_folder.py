@@ -10,11 +10,8 @@ from tkinter import filedialog
 import tkinter as tk
 import sys
 
-#from model import model_fn, params # RAN - 08-01
-
 # params
 H = 370
-#W = params.image_width # RAN - 08-01
 C = 3
 
 
@@ -124,7 +121,6 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
 
     num_of_stixels = len(predictions_list)
     new_im = Image.new('RGB', (params.image_width + 5 * (num_of_stixels-1), 370))
-    #new_im = Image.new('RGB', (24 + 5 * (num_of_stixels - 1), 370))
     x_offset = 0
     labels = []
 
@@ -146,8 +142,6 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
             new_im.paste(im, (x_offset, 0))
             x_offset += 5
 
-        #im.show()
-        #new_im.show()
         final_image = np.array(new_im)
         fig, ax = plt.subplots()
         ax.imshow(final_image)
@@ -157,13 +151,9 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
 
             plt.plot(int(params.image_width/2) + 5 * (index-1), labels[index] * 5, marker='o', markersize=5, color="blue")
             plt.plot(int(params.image_width/2) + 5 * (index-1), predictions_list[index] * 5, marker='o', markersize=4, color="red")
-
-            #plt.plot(12 + 5 * (index-1), labels[index] * 5, marker='o', markersize=5, color="blue")
-            #plt.plot(12 + 5 * (index-1), predictions_list[index] * 5, marker='o', markersize=4, color="red")
             plt.draw()
 
         image_save_name = image_name.replace('.tfrecord', '___Model_') + model_dirname + '.jpg'
-        #image_save_name = image_name.replace('.tfrecord', '') + '_prediction_' + model_dirname + '.jpg'
         print('Save ' + image_save_name + ' annotated image\n')
         plt.savefig(os.path.join(output_folder, image_save_name))
         #plt.show()
