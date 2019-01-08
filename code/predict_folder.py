@@ -8,13 +8,13 @@ import glob
 from PIL import Image
 from tkinter import filedialog
 import tkinter as tk
+import sys
 
-
-from model import model_fn, params
+#from model import model_fn, params # RAN - 08-01
 
 # params
 H = 370
-W = params.image_width
+#W = params.image_width # RAN - 08-01
 C = 3
 
 
@@ -164,13 +164,13 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
 
         image_save_name = image_name.replace('.tfrecord', '___Model_') + model_dirname + '.jpg'
         #image_save_name = image_name.replace('.tfrecord', '') + '_prediction_' + model_dirname + '.jpg'
-        print(image_save_name)
+        print('Save ' + image_save_name + ' annotated image\n')
         plt.savefig(os.path.join(output_folder, image_save_name))
         #plt.show()
         plt.close()
 
 
-def main(test_dir, model_dir):
+def main(test_dir, model_dir, model_stixel_width):
 
     # RAN - Setup logger - only displays the most important warnings
     tf.logging.set_verbosity(tf.logging.INFO)  # possible values - DEBUG / INFO / WARN / ERROR / FATAL
@@ -188,7 +188,18 @@ def main(test_dir, model_dir):
     test_files = glob.glob(test_dir + '/*.tfrecord')
 
     for test_file in test_files:
-        print(test_file)
+
+        # Make sure test file stixels width are compatible with the model stixels width
+        test_file_name = test_file.split('/')[-1]
+        test_file_name = test_file_name.split(('.')[0])
+        test_file_name = test_file_name[0]
+        test_file_stixel_width = int(test_file_name.split('W')[-1])
+
+        if test_file_stixel_width != model_stixel_width:
+            print('Skipping ' + test_file + ' - does not match the model stixels width')
+            continue
+        else:
+            print('Process ' + test_file)
 
         # Now make all these files accessible depending on whether we
         #    are in training ('train') or validation ('valid') mode.
@@ -228,10 +239,16 @@ if __name__ == '__main__':
     root.destroy()
     #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_17-01-07_LR_0.001_EP_1000'
 
+    # Use model.py that was saved in model directory
+    os.chdir(model_dir)
+    sys.path.insert(0, os.getcwd())
+    from model import model_fn, params
+    W = params.image_width
+
     # Make sure the chosen directory contains a valid model file before calling main()
     if os.path.exists(model_dir + '/model.py'):
         print('Model file exists')
-        main(test_dir, model_dir)
+        main(test_dir, model_dir, W)
     else:
         print('No model file within directory - exiting!!!!')
 
