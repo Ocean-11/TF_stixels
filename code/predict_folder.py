@@ -3,14 +3,12 @@ import os
 import numpy as np
 from TF_stixels.code.model import model_fn, params
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 from tensorflow.python import debug as tf_debug # for debugging
 import glob
 from PIL import Image
 from tkinter import filedialog
-
 import tkinter as tk
-from tkinter.filedialog import askopenfilename
+
 
 from model import model_fn, params
 
@@ -18,8 +16,6 @@ from model import model_fn, params
 H = 370
 W = params.image_width
 C = 3
-
-
 
 
 #######################################
@@ -176,22 +172,19 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
 
 def main(test_dir, model_dir):
 
-    #############################
-    ###    Define test file   ###
-    #############################
-
     # RAN - Setup logger - only displays the most important warnings
     tf.logging.set_verbosity(tf.logging.INFO)  # possible values - DEBUG / INFO / WARN / ERROR / FATAL
 
     # Load the model
     estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
 
-    ' Create new directory to save prediction annotated images '
+    # Create new directory to save prediction annotated images
     model_dirname = os.path.basename(model_dir)
     # Create required folders
     if not os.path.exists(test_dir + '/' + model_dirname) and not os.path.isdir(test_dir + '/' + model_dirname):
         os.mkdir(test_dir + '/' + model_dirname)
 
+    # locate the files to be processed
     test_files = glob.glob(test_dir + '/*.tfrecord')
 
     for test_file in test_files:
@@ -217,14 +210,16 @@ def main(test_dir, model_dir):
         visualize_pred(test_file, predictions_list, model_dir)
 
     # Print tensorboard data
-    print('tensorboard --logdir=' + str(model_dir) + '--port 6006 --debugger_port 6064')
+    print('tensorboard --logdir=' + str(model_dir) + '--port 6006')
+    #print('tensorboard --logdir=' + str(model_dir) + '--port 6006 --debugger_port 6064')
 
 
 
 if __name__ == '__main__':
 
     #test_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test'
-    test_dir = '/media/vision/Datasets/Dataset_5/test'
+    test_dir = '/media/vision/Datasets/Dataset_10_W36/test' # make sure to change the model param to 36 ..
+    # test_dir = '/media/vision/Datasets/Dataset_9/test'
 
     ' Determine the model to be used for inference '
     root = tk.Tk()
@@ -233,4 +228,13 @@ if __name__ == '__main__':
     root.destroy()
     #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-26_17-01-07_LR_0.001_EP_1000'
 
-    main(test_dir, model_dir)
+    # Make sure the chosen directory contains a valid model file before calling main()
+    if os.path.exists(model_dir + '/model.py'):
+        print('Model file exists')
+        main(test_dir, model_dir)
+    else:
+        print('No model file within directory - exiting!!!!')
+
+
+
+
