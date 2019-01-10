@@ -36,7 +36,7 @@ class ExtractCoords:
         annotation_name = annotation_name.replace('.jpg','.csv')             
                 
         'if annotated directory does not exist create it'        
-        output_dir = os.path.dirname(image_filename) + '\\annotated'
+        output_dir = os.path.dirname(image_filename) + '/annotated'
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
             print('outpur dir created')
