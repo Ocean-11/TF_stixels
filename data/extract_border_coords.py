@@ -46,15 +46,16 @@ class ExtractCoords:
         self.axes = my_figure.axes
         self.image_file = image_filename
         self.output_dir = os.path.dirname(image_filename)
-        self.out_filename = os.path.join(self.output_dir, annotation_name)
+        self.image_out_filename = image_filename
+        self.csv_out_filename = os.path.join(self.output_dir, annotation_name)
         self.point_ID = 0
         'prepare the border line'
         self.border_line, = plt.plot(*zip(*self.coords[0:1]), 'r-')
         print('init coordinates extractor')
 
-        if os.path.exists(self.out_filename):
+        if os.path.exists(self.csv_out_filename):
             # Init from the CSV file
-            with open(self.out_filename) as csv_file:
+            with open(self.csv_out_filename) as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
                 for index, row in enumerate(csv_reader):
                     new_tuple = tuple(row)
@@ -84,7 +85,8 @@ class ExtractCoords:
                 print('outpur dir created')
             annotations_filename = os.path.join(output_dir, annotation_name)
             self.output_dir = output_dir
-            self.out_filename = annotations_filename
+            self.image_out_filename = os.path.join(output_dir, os.path.basename(image_filename))
+            self.csv_out_filename = annotations_filename
             print('output file - ', annotations_filename)
 
 
@@ -183,18 +185,18 @@ class ExtractCoords:
 
         if event.key == 'enter':
             'save coordinates to file'
-            if os.path.exists(self.out_filename):
+            if os.path.exists(self.csv_out_filename):
                 print('removing the original CSV file')
-                os.remove(self.out_filename)
-            with open(self.out_filename,'w', newline='', encoding="utf-8") as f_output:
+                os.remove(self.csv_out_filename)
+            with open(self.csv_out_filename,'w', newline='', encoding="utf-8") as f_output:
                 csv_output = csv.writer(f_output)
                 csv_output.writerows(self.coords)
-                print('writing csv file to' + self.out_filename)
+                print('writing csv file to' + self.csv_out_filename)
                 
                 'move the image file to annotated directory'
-                if not(os.path.exists(self.image_file)):
+                if not(os.path.exists(self.image_out_filename)):
                     shutil.move(self.image_file, self.output_dir)
-                    print('image file moved to annotated directory')
+                    print('image file moved to ' + self.image_out_filename)
 
             'disconnect from all events'
             print('disconnecting from canvas')
