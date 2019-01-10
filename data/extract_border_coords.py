@@ -34,36 +34,61 @@ def getKey(item):
 
 class ExtractCoords:
     def __init__(self,my_figure,image_filename):
-        
-        'preparing output dir & filename'
+
+        # If annotation file already exists display it, otherwise prepare a new file
         image_name = os.path.basename(image_filename)
         annotation_name = image_name.replace('.png','.csv')
-        annotation_name = annotation_name.replace('.jpg','.csv')             
-                
-        'if annotated directory does not exist create it'        
-        output_dir = os.path.dirname(image_filename) + '/annotated'
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-            print('outpur dir created')
-        annotations_filename = os.path.join(output_dir, annotation_name)
-        print('output file - ', annotations_filename)
-        
-        'initializing internal data'        
-        self.coords = [] #list of coordinates tuple
+        annotation_name = annotation_name.replace('.jpg','.csv')
+
+        # Initializing internal data
+        self.coords = []  # list of coordinates tuple
         self.fig = my_figure
         self.axes = my_figure.axes
         self.image_file = image_filename
-        self.output_dir = output_dir
-        self.out_filename = annotations_filename
+        self.output_dir = os.path.dirname(image_filename)
+        self.out_filename = os.path.join(self.output_dir, annotation_name)
         self.point_ID = 0
-        print('init coordinates extractor')
-        
         'prepare the border line'
         self.border_line, = plt.plot(*zip(*self.coords[0:1]), 'r-')
-   
-        #axes = plt.gca()
-        #line, = axes.plot(xdata, ydata, 'r-')
-            
+        print('init coordinates extractor')
+
+        if os.path.exists(self.out_filename):
+            # Init from the CSV file
+            with open(self.out_filename) as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',')
+                for index, row in enumerate(csv_reader):
+                    new_tuple = tuple(row)
+                    x_coord = int(new_tuple[0])
+                    y_coord = int(new_tuple[1])
+                    border_point = plt.plot(x_coord, y_coord, marker='o', markersize=4, color="red", picker = 5)
+                    self.coords.append(tuple((x_coord, y_coord, index, border_point)))
+                # init point_ID
+                self.point_ID = index + 1
+
+                # Print the loaded coordinates
+                for coord in self.coords:
+                    print(coord)
+
+            're-draw the border line'
+            new_border_line = [(i[0], i[1]) for i in self.coords]  # get first 2 elemens in the tuple
+            self.border_line.set_data(*zip(*new_border_line))  # update the border line with the new coordinate
+            plt.draw()
+
+            # update
+
+        else:
+            print('no annotations file found - prepare a new one')
+            output_dir = os.path.dirname(image_filename) + '/annotated'
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+                print('outpur dir created')
+            annotations_filename = os.path.join(output_dir, annotation_name)
+            self.output_dir = output_dir
+            self.out_filename = annotations_filename
+            print('output file - ', annotations_filename)
+
+
+
     def connect(self):
         'connect to all the events we need'
         self.cid_button_press = self.fig.canvas.mpl_connect('button_press_event', self.on_button_press)
@@ -133,21 +158,19 @@ class ExtractCoords:
             ydata = thisline.get_ydata()
             ind = event.ind
             points = tuple(zip(xdata[ind], ydata[ind]))
-            print('remove: ', points)
+            print('erase point: ', points)
             #print('remove:', event.artist)
 
             for i, point in enumerate(self.coords):
                 if point[0] == xdata:
                     point_index = i
 
-            print('erase point number {}'.format(point_index))
+            #print('erase point number {}'.format(point_index))
             artist = event.artist
             artist.remove()
 
             'delete the point from list'
             del self.coords[point_index]
-            for coord in self.coords:
-                print(coord)
 
             're-draw the line'
             new_border_line = [(i[0], i[1]) for i in self.coords]  # get first 2 elemens in the tuple
@@ -159,15 +182,19 @@ class ExtractCoords:
     def on_keypressed(self,event):
 
         if event.key == 'enter':
-            'save coordinates to file'             
+            'save coordinates to file'
+            if os.path.exists(self.out_filename):
+                print('removing the original CSV file')
+                os.remove(self.out_filename)
             with open(self.out_filename,'w', newline='', encoding="utf-8") as f_output:
                 csv_output = csv.writer(f_output)
                 csv_output.writerows(self.coords)
                 print('writing csv file to' + self.out_filename)
                 
                 'move the image file to annotated directory'
-                shutil.move(self.image_file, self.output_dir)
-                print('image file moved to annotated directory') 
+                if not(os.path.exists(self.image_file)):
+                    shutil.move(self.image_file, self.output_dir)
+                    print('image file moved to annotated directory')
 
             'disconnect from all events'
             print('disconnecting from canvas')
@@ -182,7 +209,6 @@ class ExtractCoords:
 
 def annotate_image(image_filename):
     img = mpimg.imread(image_filename)
-    # imgplot = plt.imshow(img)
     fig, ax = plt.subplots()
 
     'maximize the window used'
@@ -192,15 +218,12 @@ def annotate_image(image_filename):
     # figManager.window.showMaximized() # maximize for spider backend
 
     ax.imshow(img)
-
     border_extractor = ExtractCoords(fig, image_filename)
-    # border_extractor = ExtractCoords(fig,image_filename,annotations_filename)
     border_extractor.connect()
 
 def main(image_filename):
 
     # Check if an annotation file already exists
-
     if os.path.isfile(image_filename):
         annotate_image(image_filename)
     else:
