@@ -360,16 +360,17 @@ if __name__ == '__main__':
 
     #in_folder_name = 'test_video_GC23_1'
     #in_folder_name = 'test_video_GC23_2'
-    in_folder_name = 'test_video_NLSite_1'
+    #in_folder_name = 'test_video_NLSite_1'
+    in_folder_name = 'test_video_Site40_1'
 
     # Determine the model to be used for inference
-    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-10_19-59-23_EP_250'
-    '''
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-10_19-59-23_EP_250'
+
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
     model_dir = filedialog.askdirectory(initialdir='/home/dev/PycharmProjects/stixel/TF_stixels/results')
     root.destroy()
-    '''
+
     model_name = os.path.basename(model_dir)
 
     # Create Output directory
