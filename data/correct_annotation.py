@@ -4,63 +4,52 @@
 *
 * correct_annotation()
 *
-* Purpose: scan a directory with ill-annotated images, find the original annotation files
-*          for each image in vision/DataRepo folder and initiate manual annotation
+* Purpose: open a dialog box that enables selecting a labeled file for correction,
+*          searches DataRepo for the same folder + image name and allows annotation
+*          correction
 *
 * Inputs:
-*   faulty images folder
+*   faulty image (stored within the folder with the exact same name as in DataRepo)
 *
 * Outputs:
-*   fixed annotation file replacing the previous one
+*   fixed annotation file
 *
-* Written by: Ran 09-01-2019
+* Written by: Ran 27-01-2019
 *
 '''
 
 import os
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
-import csv
-import sys
 import re
-import shutil
-from show_image_annotations import show_image
-from annotate_new_image import annotate_image
-
+from extract_border_coords import annotate_image
 
 def main(image_filename):
 
     # Parse the prediction outcome filename and find the relevant image + annotations files
-    folder_name = os.path.basename(image_filename.split(' ')[0])
-    image_name = image_filename.split(' ')[-1]
+    #folder_name = os.path.basename(image_filename.split(' ')[0])
+    folder_name = os.path.basename(os.path.dirname(image_filename))
+    image_name = os.path.basename(image_filename)
+    image_name = re.sub('_labeled.png', '.jpg', image_name)
+
+    '''
     image_name = image_name.split('__')[0]
     image_name = re.sub(r'_test_W\d\d', '', image_name)
-    image_name = image_name.replace('.tfrecord', '.jpg')
-    image_path = os.path.join('/media/vision/DataRepo/'+folder_name+'/annotated', image_name)
-    annotation_path = image_path.replace('.jpg','.csv')
-    print('correct ' + image_path + ' annotations')
+    image_name = image_name.replace('.tfrecord', '.jpg')    
+    print('folder name = {}'.format(folder_name))
+    print("image name = {}".format(image_name))
+    '''
 
-    # Call show image to display the image + annotations
-    if not(os.path.isfile(image_path)) or not(os.path.isfile(annotation_path)):
+    image_path = os.path.join('/media/vision/DataRepo/'+folder_name+'/annotated', image_name)
+    print('correct: ' + image_path)
+
+    # If annotation files exist call annotate_image
+    if not(os.path.isfile(image_path)):
         print('files do not exist')
         return
-
-    # Show the annotated image & Prompt the user if a fix is needed
-    '''
-    show_image(image_path)    
-    is_correct = input('Correct annotations? (y=yes, n=no): ')
-    if is_correct != 'y':
-        return
-    '''
-
-    # Store CSV backup, copy the image to pre-annotations folder and call annotate_new_image
-    print('correcting ..')
-    shutil.move(annotation_path, annotation_path.replace('.csv', '.csv_bu'))
-    shutil.move(image_path, '/media/vision/DataRepo/'+folder_name)
-    new_image_path = os.path.join('/media/vision/DataRepo/'+folder_name, image_name)
-
-    # Call annotate_new_image()
-    annotate_image(new_image_path)
+    else:
+        print('opening file')
+        annotate_image(image_path)
 
 
 if __name__ == '__main__':
@@ -68,7 +57,7 @@ if __name__ == '__main__':
     ' Choose a jpg image to show '
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
-    image_filename = askopenfilename(initialdir='/media/vision/Datasets')  # show an "Open" dialog box and return the path to the selected file
+    image_filename = askopenfilename(initialdir='/media/vision/In Process/For corrections')  # show an "Open" dialog box and return the path to the selected file
     print('image file - ' + image_filename)
     root.destroy() # destroy the root window at the end of openFile to allow the script to close
 
