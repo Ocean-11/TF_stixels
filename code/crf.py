@@ -29,16 +29,14 @@ def create_transition_matrix(dim, N, T, Wb):
 # implement the Viterbi dynamic programming algorithm
 # Go through the columns and compute following Viterbi function: Wu*P + Wb*min(max((|y1-y2|-N,0),T)
 
-def viterbi(observations_matrix, N):
+def viterbi(observations_matrix, N, T, W_trans):
 
     # Init
-    T = 10
     W_unary = 1
-    W_trans = 5
     observations_shape = np.shape(observations_matrix)
     stixel_dim = observations_shape[1]
     border_length = observations_shape[0]
-    print('stixel_cells_num = {}'.format(stixel_dim))
+    #print('stixel_cells_num = {}'.format(stixel_dim))
     new_energy_vec = np.zeros((stixel_dim,1))
     energy_vec = -np.log(observations_matrix[0 ,:] ) * W_unary
     #print(energy_vec)
@@ -90,7 +88,7 @@ def viterbi(observations_matrix, N):
 
     # find the best path
     #print(path_matrix)
-    print('Find the best trail from end point to first one (max probability cell {}):'.format(max_cell_index))
+    #print('Find the best trail from end point to first one (max probability cell {}):'.format(max_cell_index))
     a = min(energy_vec)
     end_of_trail = -1
     for index,i in enumerate(energy_vec):
@@ -121,38 +119,21 @@ def viterbi(observations_matrix, N):
 ###   Visualizing predictions and creating output video   ###
 #############################################################
 
-def main(grid, N):
+def main(grid, N, T, W_trans):
 
     # Use CRF to find the best path
-    best_path = viterbi(grid.T, N)
-
-    #print(best_path)
-
+    best_path = viterbi(grid.T, N, T, W_trans)
     for index, path in enumerate(best_path):
         print('{}: {}'.format(index,path))
 
 
-
 if __name__ == '__main__':
 
+    # define a grid example
     rows = 50
     columns = 50
 
     grid = np.zeros((rows, columns)) + 1e-9
-
-    '''
-    grid[0,2] = 0.9
-    grid[1,1] = 0.6
-    grid[1,2] = 0.4
-    grid[2,0] = 0.9
-    grid[2,1] = 0.1
-    '''
-
-    '''
-    grid[0,4] = 0.9
-    grid[1,4] = 0.9
-    grid[2,4] = 0.9
-    '''
 
     '''
     grid[0, 2] = 0.7
@@ -172,9 +153,7 @@ if __name__ == '__main__':
     grid[5,4] = 0.8
     grid[40,40] = 0.9
 
-    N = 5
-
-    main(grid.T, N)
+    main(grid.T, N=5, T=10, W_trans=5)
 
 
 
