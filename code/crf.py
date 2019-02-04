@@ -27,29 +27,23 @@ def create_transition_matrix(dim, N, T, Wb):
     return transition_mat
 
 # implement the Viterbi dynamic programming algorithm
+# Go through the columns and compute following Viterbi function: Wu*P + Wb*min(max((|y1-y2|-N,0),T)
 
 def viterbi(observations_matrix, N):
 
-    observations_shape = np.shape(observations_matrix)
-
-    # Go through the columns and compute following Viterbi function: Wu*P + Wb*min(max((|y1-y2|-N,0),T)
+    # Init
     T = 10
     W_unary = 1
     W_trans = 5
+    observations_shape = np.shape(observations_matrix)
     stixel_dim = observations_shape[1]
     border_length = observations_shape[0]
-
     print('stixel_cells_num = {}'.format(stixel_dim))
-    #np.set_printoptions(precision=2)
-
-    # init
     new_energy_vec = np.zeros((stixel_dim,1))
     energy_vec = -np.log(observations_matrix[0 ,:] ) * W_unary
-    print(energy_vec)
+    #print(energy_vec)
     path_matrix = np.zeros((border_length,stixel_dim))
     #print(np.shape(path_matrix))
-    # for cell_num, log_prob in enumerate(viterbi):
-        # print('cell {} - log prob = {}'.format(cell_num, log_prob))
     transition_matrix = create_transition_matrix(stixel_dim ,N ,T, W_trans)
 
     # Go through each row
@@ -87,16 +81,15 @@ def viterbi(observations_matrix, N):
             #print('adding {},{} energy {}'.format(to_row,cell_num, -np.log(observations_matrix[to_row, cell_num])))
             new_energy_vec[to_cell] = -np.log(observations_matrix[to_row, to_cell]) * W_unary + min_energy
             path_matrix[to_row,to_cell] = int(min_energy_cell_num)
+
         # Save new energy vec to energy vec
         for index, val in enumerate(new_energy_vec):
             energy_vec[index] = val
-        print(energy_vec.T)
-        #print(path_matrix)
+        #print(energy_vec.T)
 
 
     # find the best path
-    #print(energy_vec.T)
-    print(path_matrix)
+    #print(path_matrix)
     print('Find the best trail from end point to first one (max probability cell {}):'.format(max_cell_index))
     a = min(energy_vec)
     end_of_trail = -1
@@ -109,14 +102,19 @@ def viterbi(observations_matrix, N):
                 # choose the index closest to the max-probability cell
                 end_of_trail = index
 
+    # Go through the path_matrix and create the (reverse) optimal path
+    best_path_r = []
+    best_path_r.append(end_of_trail)
     print(end_of_trail)
     for row_num in range(border_length-1,0,-1):
         end_of_trail = int(path_matrix[row_num,end_of_trail])
-        print(end_of_trail)
+        best_path_r.append(end_of_trail)
+        #print(end_of_trail)
 
-    # Need to think how to break the ties !!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+    # Reverse the list
+    best_path = list(reversed(best_path_r))
+    #print(best_path)
 
-    best_path = 0
     return best_path
 
 #############################################################
@@ -128,10 +126,19 @@ def main(grid, N):
     # Use CRF to find the best path
     best_path = viterbi(grid.T, N)
 
+    #print(best_path)
+
+    for index, path in enumerate(best_path):
+        print('{}: {}'.format(index,path))
+
+
 
 if __name__ == '__main__':
 
-    grid = np.zeros((4, 5)) + 1e-9
+    rows = 50
+    columns = 50
+
+    grid = np.zeros((rows, columns)) + 1e-9
 
     '''
     grid[0,2] = 0.9
@@ -154,17 +161,23 @@ if __name__ == '__main__':
     grid[3, 4] = 0.8
     '''
 
-    grid[0, 0] = 0.7
-    grid[0, 1] = 0.3
-    grid[1, 2] = 0.8
-    grid[1, 3] = 0.2
-    grid[2, 2] = 0.2
-    grid[2, 3] = 0.8
-    grid[3, 2] = 0.8
+    grid[0,0] = 0.7
+    grid[0,1] = 0.3
+    grid[1,2] = 0.8
+    grid[1,3] = 0.2
+    grid[2,2] = 0.2
+    grid[2,3] = 0.8
+    grid[3,2] = 0.8
+    grid[4,3] = 0.9
+    grid[5,4] = 0.8
+    grid[40,40] = 0.9
 
     N = 5
 
     main(grid.T, N)
+
+
+
 
 
 
