@@ -57,7 +57,7 @@ class InitHook(tf.train.SessionRunHook):
 ###   Gather Saved Data   ###
 #############################
 
-dataset_dir = '/Dataset_10_W36'
+dataset_dir = '/Dataset_14'
 train_dir = '../data' + dataset_dir + '/train'
 valid_dir = '../data' + dataset_dir + '/valid'
 test_dir = '../data' + dataset_dir + '/test'
@@ -143,7 +143,7 @@ def load_dataset(mode):
     # buffer_size determines how large the buffer of records we will shuffle
     #    is, (larger is better!) but be wary of your memory capacity.
     if mode == 'train':
-        dataset = dataset.shuffle(buffer_size=2000) # RAN 07-01-2019
+        dataset = dataset.shuffle(buffer_size=4000) # RAN 07-01-2019
         #dataset = dataset.shuffle(buffer_size=1000)
     # Batch the data - you can pick a batch size, maybe 32, and later
     #    we will include this in a dictionary of other hyper parameters.
@@ -156,7 +156,7 @@ def load_dataset(mode):
 ###################################y
 
 import time, datetime
-from model import model_fn, params, config, parse
+from model_for_CRF import model_fn, params, config, parse
 
 ts = time.time()
 timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
@@ -209,11 +209,11 @@ def initialize_uninitialized(sess):
 
 # Find the path of the current running file (train script)
 curr_path = os.path.realpath(__file__)
-model_path = curr_path.replace('train.py', 'model.py')
+model_path = curr_path.replace('train.py', 'model_for_CRF.py')
 
 # Define the path of your factored out model.py file
-#model_file = '/some/path/model.py'
-model_file = './model.py'
+#model_file = '/some/path/model_for_CRF.py'
+model_file = './model_for_CRF.py'
 
 # Now copy the training script and the model file to
 #   model_dir -- the same directory specified when creating the Estimator
