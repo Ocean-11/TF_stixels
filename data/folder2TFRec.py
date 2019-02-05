@@ -69,8 +69,10 @@ class Frame2StxTfrecords:
         ' Read GT file (retain only first 2 columns) '
         if (GT_file_path.endswith('.csv')):
             GT_data = pd.read_csv(GT_file_path, header=None)
+            self.is_GT = True
         else:
             GT_data = pd.read_csv('/home/dev/PycharmProjects/stixel/TF_stixels/default_GT.csv', header=None)
+            self.is_GT = False
             #print('no CSV file given - using default')
         GT_df = pd.DataFrame(GT_data)
         GT_df = GT_df.iloc[:, 0:2] #getting rid of columns 3 & 4
@@ -86,12 +88,27 @@ class Frame2StxTfrecords:
     def float_feature(self, value):
         return tf.train.Feature(bytes_list=tf.train.FloatList(value=[value]))
 
+    def string_feature(self, value):
+        return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value.strip().encode("ascii")]))
+
     def create_tf_example(self, img_raw, label):
         tf_example = tf.train.Example(features=tf.train.Features(feature={
             'image': self.bytes_feature(img_raw),
             'label': self.int64_feature(label),
         }))
         return tf_example
+
+    # NEW
+    '''
+    def create_tf_example_2(self, img_raw, label, name):
+        tf_example = tf.train.Example(features=tf.train.Features(feature={
+            'image': self.bytes_feature(img_raw),
+            'label': self.int64_feature(label),
+            'frame_id': self.int64_feature(label),
+            'name': self.string_feature(name),
+        }))
+        return tf_example
+        '''
 
     def plot_stx_GT(self, imName, s, stx_label):
         fig, ax = plt.subplots()
@@ -111,9 +128,9 @@ class Frame2StxTfrecords:
         x_stop = min(self.frame_ground_truth.x.iat[-1], width)
         #x_stop = self.frame_ground_truth.x.iat[-1]
         annotated_w = x_stop - x_start + 1
-        print('start={} stop={} w={}'.format(x_start, x_stop, annotated_w))
+        #print('start={} stop={} w={}'.format(x_start, x_stop, annotated_w))
         num_stixels = int(((annotated_w - self.stx_w) / self.stride) + 1)
-        print('stixel width = {}, number of stixles to be generated {}'.format(self.stx_w, num_stixels))
+        #print('stixel width = {}, number of stixles to be generated {}'.format(self.stx_w, num_stixels))
         frame_name = os.path.basename(self.frame_path)
 
         ' display the current frame'
@@ -144,13 +161,14 @@ class Frame2StxTfrecords:
             GT_point_ID_1 = next(x[0] for x in enumerate(self.frame_ground_truth.x) if x[1] > i)
             GT_point_ID_2 = max(GT_point_ID_1 - 1, 0)
 
-
+            '''
             print('GT for stixel {} points - ({},{}), ({},{})'.format(
                 stixel,
                 self.frame_ground_truth.x[GT_point_ID_2],
                 self.frame_ground_truth.y[GT_point_ID_2],
                 self.frame_ground_truth.x[GT_point_ID_1],
                 self.frame_ground_truth.y[GT_point_ID_1]))
+                '''
 
             ' interpolate the GT value'
             x_GT = [self.frame_ground_truth.x[GT_point_ID_2], self.frame_ground_truth.x[GT_point_ID_1]]
