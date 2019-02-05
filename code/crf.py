@@ -103,7 +103,7 @@ def viterbi(observations_matrix, N, T, W_trans):
     # Go through the path_matrix and create the (reverse) optimal path
     best_path_r = []
     best_path_r.append(end_of_trail)
-    print(end_of_trail)
+    #print(end_of_trail)
     for row_num in range(border_length-1,0,-1):
         end_of_trail = int(path_matrix[row_num,end_of_trail])
         best_path_r.append(end_of_trail)

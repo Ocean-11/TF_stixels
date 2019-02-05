@@ -376,6 +376,8 @@ def parse(serialized):
     return {'image': image}, label
 
 
+
+
 ###################################
 ###   Define Hyper Parameters   ###
 ###################################
@@ -383,7 +385,7 @@ def parse(serialized):
 
 params = tf.contrib.training.HParams(
     learning_rate=0.001,
-    train_epochs=5,
+    train_epochs=250,
     batch_size=32,
     image_height=370,
     image_width=W,
