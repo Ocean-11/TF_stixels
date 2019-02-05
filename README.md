@@ -8,26 +8,44 @@ code - includes model, training & prediction scripts
 
 
 ## data folder
-annotate_new_image()
-*   The script selects an image, provides GUI for annotation, and once done creates an annotation CSV file and copies both to the "annotated" folder. annotate_new_image() uses extract_border_coords() as a Helper function
+crop_image()
+*   crop image allows cropping the an entire folder of images, creating a "cropped" images folder 
 
-show_image_annotations()
-*   The script selects an image, opens the accompanying CSV annotations file and displays the annotations on top of the image
+extract_border_coords()
+*   The script allows selection of an image to be annotated. In case an annotation file already exists, the annotations would be presented on top of the image. Annotations may be created & edited via a dedicated GUI. Once done the annotation CSV file is created/saved
 
-folder2tTFRec()
-*   The module receives a directory name, creates train/valid/test/control/meta_data olders, and scans it's "annotated" folder, translating annotated images into train/valid/test TFrecords. Control images and meta_data are also saved
+correct_annotation()
+*  The script allows selection of a control image (with wrong annotations), finds the original image + CSV file and  uses extract_border_coords to correct it
+
+folder2TFRec()
+*   The module receives a directory name, creates train/valid/test/control/meta_data folders, and scans it's "annotated" folder, translating annotated images into train/valid/test TFrecords, based on thye required stixels width (W). Control images and meta_data are also saved
+
+tree2TFRec()
+*   The module uses folder2TFRec() to create TFrecords for an entire folders tree   
+
+create_new_dataset()
+*   copy train/valid/test/meta_data from a specified directory (built in a required structure to an output "Dataset" directory.
+
 
 ## code folder
+model()
+*   the module implements a MobileNetV2 stixels model
 
-create_dataset()
-*   copy train/valid/test/meta_data from a specified directory (built in a required structure to an output "Dataset" directory.
+model_for_CRF()
+*   the same MobileNetV2 stixels model implementation outputting the Softmax probabilities as well 
 
 train()
 *   the module trains a MobileNetV2 stixels model
 
-model()
-*   the module implements a MobileNetV2 stixels model
-
-predict_folder()
+predict()/predict_folder()
 * the module selects a trained model directory, scans a test images directory and annotates the images with both labels & predictions
-                   
+
+CRF())
+*   the module implements a Conditional Random Fields filter
+
+video()
+*   the module creates a video from an images folder                   
+
+## General Files
+image_predict()
+*   the module analyzes an image with and w/o GT file and produces, implements the inference, and produces an output image + meta data 
