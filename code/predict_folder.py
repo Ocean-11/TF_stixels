@@ -9,6 +9,7 @@ from PIL import Image
 from tkinter import filedialog
 import tkinter as tk
 import sys
+import time
 
 # params
 H = 370
@@ -198,8 +199,13 @@ def main(test_dir, model_dir, model_stixel_width):
         # Prepare hooks for debugging
         hooks = [tf_debug.TensorBoardDebugHook(grpc_debug_server_addresses="dev:6064")]
 
+        start_time = time.time()
+
         predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test',data_files))
         #predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'), hooks = hooks)
+
+        duration = time.time() - start_time
+        print(duration)
 
         # Predict!
         predictions_list = []
@@ -218,8 +224,8 @@ def main(test_dir, model_dir, model_stixel_width):
 
 if __name__ == '__main__':
 
-    #test_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_5/test'
-    test_dir = '/media/vision/Datasets/Dataset_10_W36/test' # make sure to change the model param to 36 ..
+    test_dir = '/media/vision/Results/DS_12'  # make sure to change the model param to 36 ..
+    #test_dir = '/media/vision/Datasets/Dataset_12/test' # make sure to change the model param to 36 ..
     # test_dir = '/media/vision/Datasets/Dataset_9/test'
 
     ' Determine the model to be used for inference '

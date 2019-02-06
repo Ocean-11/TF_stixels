@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.python import debug as tf_debug # for debugging
 from PIL import Image
+from tkinter import filedialog
+import tkinter as tk
 import sys
 
 # params
@@ -18,14 +20,6 @@ C = 3
 # Determine the model to be used for inference
 
 model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-07_21-42-15_EP_200'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_16-04-28_LR_0.001_EP_50'
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-24_15-14-08LR_0.01EP_50' #0.01LR, 50epochs
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-23_20-23-40' # 250 epochs, relu6
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-19_09-51-38' # 100 epochs + using relu6
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-17_18-33-01' # 1000 epochs + using leakyrelu
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-18_13-07-00' # 100 epochs + using relu6 + data normailization
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-16_17-39-06' # 25 epochs + using leakyrelu
-#model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2018-12-19_09-51-38' # 100 epochs + using relu6
 
 # Use model.py that was saved in model directory
 os.chdir(model_dir)
@@ -217,45 +211,124 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
         plt.show()
         plt.close()
 
+def predict(test_file, model_dir):
+
+    # Load the model
+    estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
+
+    # Create the input_fn
+    #input_fn = tf.estimator.inputs.numpy_input_fn(x={'image' : inputs}, num_epochs=1, shuffle=False)
+
+    # Prepare hooks for debugging
+    hooks = [tf_debug.TensorBoardDebugHook(grpc_debug_server_addresses="dev:6064")]
+
+    predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'))
+    #predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'), hooks = hooks)
+
+    # Predict!
+    predictions_list = []
+    predictions_list = list(predictions)
+
+    predicted_label = predictions_list[0]
+    print('prediction = {}'.format(predicted_label))
+    #print('max = {}'.format(predictions_list[np.argmax(predictions_list)]))
+
+    # Print tensorboard data
+    print('tensorboard --logdir=' + str(model_dir) + ' --port 6006 --debugger_port 6064')
+
+    # Visualize predictions based on single test TFrecord
+    visualize_pred(test_file, predictions_list, model_dir)
 
 
 
+def main(test_file, model_dir, model_stixel_width):
+    # RAN - Setup logger - only displays the most important warnings
+    tf.logging.set_verbosity(tf.logging.INFO)  # possible values - DEBUG / INFO / WARN / ERROR / FATAL
 
-#############################
-###    Define Estimator   ###
-#############################
+    # Load the model
+    estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
 
-# Load the model
-estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
+    # Create new directory to save prediction annotated images
+    model_dirname = os.path.basename(model_dir)
+    # Create required folders
+    if not os.path.exists(test_dir + '/' + model_dirname) and not os.path.isdir(test_dir + '/' + model_dirname):
+        os.mkdir(test_dir + '/' + model_dirname)
 
-# Create the input_fn
-#input_fn = tf.estimator.inputs.numpy_input_fn(x={'image' : inputs}, num_epochs=1, shuffle=False)
+    # Make sure test file stixels width are compatible with the model stixels width
+    test_file_name = test_file.split('/')[-1]
+    test_file_name = test_file_name.split(('.')[0])
+    test_file_name = test_file_name[0]
+    test_file_stixel_width = int(test_file_name.split('W')[-1])
 
-##############################
-###    Perform inference   ###
-##############################
+    if test_file_stixel_width != model_stixel_width:
+        print('Skipping ' + test_file + ' - does not match the model stixels width')
+        return
+    else:
+        print('Process ' + test_file)
 
-# Prepare hooks for debugging
-hooks = [tf_debug.TensorBoardDebugHook(grpc_debug_server_addresses="dev:6064")]
+    predict(test_file, model_dir)
 
-predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'))
-#predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'), hooks = hooks)
-
-# Predict!
-predictions_list = []
-predictions_list = list(predictions)
-'''
-for pred in predictions_list:
-    print(pred)
     '''
-predicted_label = predictions_list[0]
-print('prediction = {}'.format(predicted_label))
-#print('max = {}'.format(predictions_list[np.argmax(predictions_list)]))
 
-# Print tensorboard data
-print('tensorboard --logdir=' + str(model_dir) + ' --port 6006 --debugger_port 6064')
+    # Now make all these files accessible depending on whether we
+    #    are in training ('train') or validation ('valid') mode.
+    data_files = {'test': test_file}
 
-# Visualize predictions based on single test TFrecord
-visualize_pred(test_file, predictions_list, model_dir)
+    # Prepare hooks for debugging
+    hooks = [tf_debug.TensorBoardDebugHook(grpc_debug_server_addresses="dev:6064")]
+
+    predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'))
+    #predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test', data_files))
+    # predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'), hooks = hooks)
+
+    # Predict!
+    predictions_list = []
+    predictions_list = list(predictions)
+    predicted_label = predictions_list[0]
+    # print('prediction = {}'.format(predicted_label))
+
+    # Visualize predictions based on single test TFrecord
+    visualize_pred(test_file, predictions_list, model_dir)
+
+    # Print tensorboard data
+    print('tensorboard --logdir=' + str(model_dir) + '--port 6006')
+    # print('tensorboard --logdir=' + str(model_dir) + '--port 6006 --debugger_port 6064')
+    
+    '''
+
+
+if __name__ == '__main__':
+
+    test_dir = '/media/vision/Datasets/Dataset_12/test'  # make sure to change the model param to 36 ..
+    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-10_19-59-23_EP_250'
+
+    # Determine the model to be used for inference
+    root = tk.Tk()
+    root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
+    test_file = filedialog.askopenfilename(initialdir=test_dir)
+    root.destroy()
+    print('Predict: ', test_file)
+
+    # Use model.py that was saved in model directory
+    os.chdir(model_dir)
+    sys.path.insert(0, os.getcwd())
+    from model import model_fn, params
+
+    W = params.image_width
+
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-07_21-42-15_EP_200'
+    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-10_19-59-23_EP_250'
+    test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_12/test/NE1_Garden8 frame_000194_test_W36.tfrecord'
+    #test_file = '/home/dev/PycharmProjects/stixel/TF_stixels/data/Dataset_10_W36/test/NE1_NLSite2 frame_866_original_roi_gc_test_W36.tfrecord'
+
+    # Make sure the chosen directory contains a valid model file before calling main()
+    if os.path.exists(model_dir + '/model.py'):
+        print('Model file exists')
+        main(test_file, model_dir, W)
+    else:
+        print('No model file within directory - exiting!!!!')
+
+
+
 
 

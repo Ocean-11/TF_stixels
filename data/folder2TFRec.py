@@ -73,7 +73,7 @@ class Frame2StxTfrecords:
         else:
             GT_data = pd.read_csv('/home/dev/PycharmProjects/stixel/TF_stixels/default_GT.csv', header=None)
             self.is_GT = False
-            #print('no CSV file given - using default')
+            print('no CSV file given - using default')
         GT_df = pd.DataFrame(GT_data)
         GT_df = GT_df.iloc[:, 0:2] #getting rid of columns 3 & 4
         GT_df.columns = ["x","y"] # adding columns names
