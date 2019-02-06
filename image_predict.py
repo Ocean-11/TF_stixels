@@ -153,7 +153,7 @@ def parse(serialized):
 ###   Visualizing predictions and creating output video   ###
 #############################################################
 
-def visualize_pred(image_in, tfrecord_file, predictions_list, image_width, out_folder, debug_image):
+def visualize_pred(image_in, tfrecord_file, predictions_list, image_width, out_folder, model_name, debug_image, show_images):
 
     image_folder = os.path.dirname(out_folder)
     image_num = 0
@@ -236,9 +236,9 @@ def visualize_pred(image_in, tfrecord_file, predictions_list, image_width, out_f
             best_path_points.append([int(params.image_width / 2) + index*5, path*5 + 2])
         plt.plot(np.array(best_path_points)[:,0], np.array(best_path_points)[:,1], color="blue", linewidth=plot_border_width)
 
-        # Plot the labels
+        # If labeles exist and not in debug mode, plot the labels
         annotation_in = image_in.replace('.jpg', '.csv')
-        if os.path.exists(annotation_in):
+        if os.path.exists(annotation_in) and not debug_image:
             del_y = image_size[1] - 370
             # Init from the CSV file
             with open(annotation_in) as csv_file:
@@ -254,17 +254,26 @@ def visualize_pred(image_in, tfrecord_file, predictions_list, image_width, out_f
             plt.plot(np.array(label_coords)[:, 0], np.array(label_coords)[:, 1], color="red", linewidth=1.0)
 
         if debug_image:
+            #In debug mode plot the softmax probabilities
             grid = np.ma.masked_array(grid, grid < .0001)
             plt.pcolormesh(X, Y, grid, norm=colors.LogNorm(), alpha = 0.75)
         plt.imshow(new_im, cmap='gray', alpha=1.0, interpolation='none')
 
-        image_file_name = os.path.join(image_folder, 'frame' + format(image_num, '03d') + '.jpg')
+        name = ' {} N{}_T{}_Tr{}.jpg'.format(model_name, N, T, W_trans)
+        if debug_image:
+            name.replace('.jpg',' debug.jpg')
+            name = ' {} N{}_T{}_Tr{} debug.jpg'.format(model_name, N, T, W_trans)
+            print('replacing name to indicate debug !!!!!!')
+            print(name)
+        image_out_name = image_in.replace('.jpg', name)
+        image_out_name = os.path.basename(image_out_name)
+        image_file_name = os.path.join(out_folder, image_out_name)
         plt.savefig(image_file_name, format='jpg')
         print('saving fig to ', image_file_name)
 
-        plt.show()
+        if show_images:
+            plt.show()
         plt.close()
-
 
 
 ######################################
@@ -292,13 +301,9 @@ def image_2_tfrec(image_in, tfrec_filename, model_stixel_width):
 ###                           main                         ###
 ##############################################################
 
-def main(image_in, image_out_dir, image_width = 476):
-    # Determine the model
-    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
+def main(image_in, image_out_dir, model_dir, image_width, debug_image, show_images):
 
-    # If required create required folder
-    if not os.path.exists(image_out_dir) and not os.path.isdir(image_out_dir):
-        os.mkdir(image_out_dir)
+    model_name = os.path.basename(model_dir)
 
     # Restore model.py that was saved in model directory
     os.chdir(model_dir)
@@ -310,6 +315,11 @@ def main(image_in, image_out_dir, image_width = 476):
         os.exit()
 
     W = params.image_width
+
+    # If required create required folder
+    image_out_dir = image_out_dir + '/' + model_name
+    if not os.path.exists(image_out_dir) and not os.path.isdir(image_out_dir):
+        os.mkdir(image_out_dir)
 
     # Translate the image to a TF record
     tfrec_filename = image_in.replace('.jpg','_W' + str(W) + '.tfrecord')
@@ -338,7 +348,7 @@ def main(image_in, image_out_dir, image_width = 476):
     predictions_list = list(predictions)
 
     # Visualize predictions based on single test TFrecord
-    visualize_pred(image_in, tfrec_filename, predictions_list, image_width, image_out_dir, debug_image=False)
+    visualize_pred(image_in, tfrec_filename, predictions_list, image_width, image_out_dir, model_name, debug_image=debug_image, show_images=show_images)
 
     # Print tensorboard data
     print('tensorboard --logdir=' + str(model_dir) + '--port 6006')
@@ -359,7 +369,6 @@ if __name__ == '__main__':
         print('no such file')
         os.exit()
 
-    '''
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
     # image_filename = askopenfilename(initialdir='/media/vision/In Process/ForAnnotation/GC23_fixes')  # show an "Open" dialog box and return the path to the selected file
@@ -367,12 +376,14 @@ if __name__ == '__main__':
         initialdir='/media/vision/Results/',
         filetypes=[('JPG file', '*.jpg')])  # show an "Open" dialog box and return the path to the selected file
     root.destroy()
-    print('predict image - ' + image_filename)
-    '''
+    print('predict image - ' + image_in)
 
-    image_out_dir = '/media/vision/Results/image_for_predict/'
+    image_out_dir = os.path.dirname(image_in)
 
-    main(image_in, image_out_dir)
+    # Determine the model
+    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
+
+    main(image_in, image_out_dir, model_dir, image_width, True, show_images = True)
 
 
 

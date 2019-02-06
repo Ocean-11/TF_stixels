@@ -67,6 +67,7 @@ class Frame2StxTfrecords:
         self.frame_type = frame_type
 
         ' Read GT file (retain only first 2 columns) '
+        '''
         if (GT_file_path.endswith('.csv')):
             GT_data = pd.read_csv(GT_file_path, header=None)
             self.is_GT = True
@@ -74,6 +75,12 @@ class Frame2StxTfrecords:
             GT_data = pd.read_csv('/home/dev/PycharmProjects/stixel/TF_stixels/default_GT.csv', header=None)
             self.is_GT = False
             print('no CSV file given - using default')
+            '''
+        # NEW: For prediction purposes, assume ther's no ground truth file
+        GT_data = pd.read_csv('/home/dev/PycharmProjects/stixel/TF_stixels/default_GT.csv', header=None)
+        self.is_GT = False
+        print('no CSV file given - using default')
+
         GT_df = pd.DataFrame(GT_data)
         GT_df = GT_df.iloc[:, 0:2] #getting rid of columns 3 & 4
         GT_df.columns = ["x","y"] # adding columns names

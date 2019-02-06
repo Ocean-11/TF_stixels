@@ -30,120 +30,6 @@ N = 1
 T = 20 #20
 W_trans = 10
 
-#######################################
-###   Creating a dataset_input_fn   ###
-#######################################
-
-'''
-    dataset_input_fn - Constructs a Dataset, Iterator, and returns handles that will be called when
-    Estimator requires a new batch of data. This function will be passed into 
-    Estimator as the input_fn argument.
-
-    Inputs:
-        mode: string specifying whether to take the inputs from training or validation data
-    Outputs:
-        features: the columns of feature input returned from a dataset iterator
-        labels: the columns of labels for training return from a dataset iterator
-'''
-
-
-def dataset_input_fn(mode, data_files):
-    # Function that does the heavy lifting for constructing a Dataset
-    #    depending on the current mode of execution
-    dataset = load_dataset(mode,data_files)
-    # Making an iterator that runs from start to finish once
-    #    (the preferred type for Estimators)
-    iterator = dataset.make_one_shot_iterator()
-    # Consuming the next batch of data from our iterator
-
-    '''
-    features, label, frame_id, frame_name = iterator.get_next()
-    return features, label, frame_id, frame_name
-    '''
-
-    features, frame_id = iterator.get_next()
-    return features, frame_id
-
-
-####################################
-###   Constructing the Dataset   ###
-####################################
-
-'''
-    load_dataset() - Loads and does all processing for a portion of the dataset specified by 'mode'.
-
-    Inputs:
-        mode: string specifying whether to take the inputs from training or validation data
-
-    Outputs:
-        dataset: the Dataset object constructed for this mode and pre-processed
-'''
-
-
-
-def load_dataset(mode, data_files):
-    # Taking either the train or validation files from the dictionary we constructed above
-    files = data_files[mode]
-    # Created a Dataset from our list of TFRecord files
-    dataset = tf.data.TFRecordDataset(files)
-    # Apply any processing we need on each example in our dataset.  We
-    #    will define parse next.  num_parallel_calls decides how many records
-    #    to apply the parse function to at a time (change this based on your
-    #    machine).
-    dataset = dataset.map(parse, num_parallel_calls=2)
-    # Shuffle the data if training, for validation it is not necessary
-    # buffer_size determines how large the buffer of records we will shuffle
-    #    is, (larger is better!) but be wary of your memory capacity.
-    if mode == 'train':
-        dataset = dataset.shuffle(buffer_size=1000)
-    # Batch the data - you can pick a batch size, maybe 32, and later
-    #    we will include this in a dictionary of other hyper parameters.
-    dataset = dataset.batch(params.batch_size)
-    return dataset
-
-
-#######################################
-###   Defining the Parse Function   ###
-#######################################
-
-
-def parse(serialized):
-    # Define the features to be parsed out of each example.
-    #    You should recognize this from when we wrote the TFRecord files!
-    '''
-    features = {
-        'image': tf.FixedLenFeature([], tf.string),
-        'label': tf.FixedLenFeature([], tf.int64),
-        'frame_id': tf.FixedLenFeature([], tf.int64),
-        'name': tf.FixedLenFeature([], tf.string),
-    }
-    '''
-
-    features = {
-        'image': tf.FixedLenFeature([], tf.string),
-        'frame_id': tf.FixedLenFeature([], tf.int64),
-    }
-
-    # Parse the features out of this one record we were passed
-    parsed_example = tf.parse_single_example(serialized=serialized, features=features)
-    # Format the data
-    image_raw = parsed_example['image']
-    image = tf.image.decode_png(image_raw, channels=3,
-                                dtype=tf.uint8)  # Decode the raw bytes so it becomes a tensor with type.
-    image = tf.cast(image, tf.float32)  # The type is now uint8 but we need it to be float.
-
-    '''
-    label = parsed_example['label']
-    frame_id = parsed_example['frame_id']
-    frame_name = parsed_example['name']    
-    return {'image': image}, label, frame_id, frame_name
-    '''
-
-    frame_id = parsed_example['frame_id']
-    return {'image': image}, frame_id
-
-
-
 ###################################################
 ### Scan images in folder and create a TFRecord ###
 ###################################################
@@ -318,6 +204,8 @@ def visualize_pred(tfrecord_file, predictions_list, image_width, create_video, v
     image_num = 0
     print(image_folder)
 
+    plot_border_width = 2.0
+
     # reset tf graph
     tf.reset_default_graph()
 
@@ -389,7 +277,7 @@ def visualize_pred(tfrecord_file, predictions_list, image_width, create_video, v
                     best_path_points = []
                     for index, path in enumerate(best_path):
                         best_path_points.append([int(params.image_width / 2) + index * 5, path * 5 + 2])
-                    plt.plot(np.array(best_path_points)[:, 0], np.array(best_path_points)[:, 1], color="blue", linewidth=3.0)
+                    plt.plot(np.array(best_path_points)[:, 0], np.array(best_path_points)[:, 1], color="blue", linewidth=plot_border_width)
 
                     # pcolormesh of interpolated uniform grid with log colormap
                     if not(create_video):
@@ -427,7 +315,7 @@ def visualize_pred(tfrecord_file, predictions_list, image_width, create_video, v
         best_path_points = []
         for index, path in enumerate(best_path):
             best_path_points.append([int(params.image_width / 2) + index*5, path*5 + 2])
-        plt.plot(np.array(best_path_points)[:,0], np.array(best_path_points)[:,1], color="blue", linewidth=3.0)
+        plt.plot(np.array(best_path_points)[:,0], np.array(best_path_points)[:,1], color="blue", linewidth=plot_border_width)
 
 
         grid = np.ma.masked_array(grid, grid < .01)
@@ -524,24 +412,20 @@ def main(video_in_folder, model_dir, model_stixel_width, image_width, create_vid
 
 if __name__ == '__main__':
 
-    create_video = True
+    create_video = False
 
     image_width = 476  # when image width = 480
-    in_folder_name = 'test_video_GC23_1'
+    #in_folder_name = '/media/vision/Results/image_for_predict'
+    in_folder_name = '/media/vision/Results/test_video_GC23_1'
     #in_folder_name = 'test_video_GC23_2'
     #in_folder_name = 'test_video_Site40_1'
     #in_folder_name = 'test_video_single'
+    #in_folder_name = 'test_video_NLSite_1'
 
     '''
-    in_folder_name = 'test_video_NLSite_1'
+    in_folder_name = 'test_video_UKSite4GC'
     image_width = 636  # when image width = 636
     '''
-
-
-    # Determine the model to be used for inference
-    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-23_18-30-37_EP_10'
-    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
-
     '''
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
@@ -549,8 +433,29 @@ if __name__ == '__main__':
     root.destroy()
     '''
 
+    images = sorted(glob.glob(in_folder_name + '/*.jpg'))
+
+    out_folder_name = in_folder_name
+
+    # Determine the model to be used for inference
+    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
     model_name = os.path.basename(model_dir)
 
+
+    import image_predict
+
+    #image_in = '/media/vision/Results/image_for_predict/frame_000142.jpg'
+    #out_folder_name = os.path.dirname(image_in)
+
+    out_folder_name = in_folder_name
+
+    for image in images:
+        image_predict.main(image, out_folder_name, model_dir, image_width, False, show_images=False)
+
+
+
+    '''
+    
     # Create Output directory
     video_in_folder = '/media/vision/Results/' + in_folder_name
     video_out_folder = video_in_folder + '/' + model_name
@@ -574,8 +479,6 @@ if __name__ == '__main__':
 
     W = params.image_width
 
-    # Add automatic check .............
-
     # Make sure the chosen directory contains a valid model file before calling main()
     if os.path.exists(model_dir + '/model_for_CRF.py'):
         print('Model file exists')
@@ -584,6 +487,6 @@ if __name__ == '__main__':
         print('No model file within directory - exiting!!!!')
 
 
-
+    '''
 
 
