@@ -52,13 +52,13 @@ predict()/predict_folder()
 * the module selects a trained model directory, scans a test images directory and annotates
  the images with both labels & predictions
 
-CRF())
+CRF()
 * the module implements a Conditional Random Fields filter
 
 video()
-* the module creates a video from an images folder                   
+* the module takes an images folder and turns it into a video                   
 
 ## General Files
 image_predict()
-* the module analyzes an image with and w/o GT file and produces, implements the inference,
- and produces an output image + meta data 
+* the module analyzes an image with and w/o GT file, uses a prescribed model 
+for inference, and produces an output image + meta data 

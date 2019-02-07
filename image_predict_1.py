@@ -144,62 +144,88 @@ def parse(serialized):
     frame_id = parsed_example['frame_id']
     return {'image': image}, frame_id
 
+class image_predictor:
+    def __init__(self, image_in, out_folder, image_width, model_dir, debug_image, show_images):
+
+        # load the correct model
+        if os.path.exists(model_dir + '/model_for_CRF.py'):
+            from model_for_CRF import model_fn, params
+            print('impotrting model function')
+        else:
+            print('No model file within directory - exiting!!!!')
+
+        # Init class internal params
+        self.out_folder = out_folder
+        self.model_name = os.path.basename(model_dir)
+        self.model_dir = model_dir
+        self.image_folder = os.path.dirname(out_folder)
+        self.plot_border_width = 2.0
+        im = Image.open(image_in)
+        self.image_size = im.size
+        self.image_width = image_width
+        self.debug_image = debug_image
+        self.show_images = show_images
+        print('image size =  {}'.format(self.image_size))
+
+        self.W = params.image_width
+        self.model_fn = model_fn
+        self.params = params
+
+        # Reset tf graph
+        tf.reset_default_graph()
+        tf.logging.set_verbosity(tf.logging.INFO)  # possible values - DEBUG / INFO / WARN / ERROR / FATAL
+
+        # Prepare data structure for softmax predictions
+        self.grid_x_width = int((self.image_width - 36) / 5) + 1
+        self.grid_y_width = 74
+
+        # Create data grid
+        x = np.linspace(0, self.grid_x_width - 1, self.grid_x_width) * 5 + 18 - 3  # reduce 3 to center the probability points
+        y = np.linspace(0, self.grid_y_width - 1, self.grid_y_width) * 5 - 2
+        self.X, self.Y = np.meshgrid(x, y)
+        #print(np.shape(self.X), np.shape(self.Y))
+
+        # Create session
+        self.sess =  tf.Session()
+        self.sess.run(tf.global_variables_initializer())
 
 
-#############################################################
-###   Visualizing predictions and creating output video   ###
-#############################################################
+        # Load the model
+        self.estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
 
-def visualize_pred(image_in, tfrecord_file, predictions_list, image_width, out_folder, model_name, debug_image, show_images):
+        # MAKE SURE TO CLOSE THE SESSION ONCE DONE !!!!
 
-    image_folder = os.path.dirname(out_folder)
-    image_num = 0
-    plot_border_width = 2.0
+    def close_session(self):
+        print('Closing the session')
+        self.sess.close()
 
-    im = Image.open(image_in)
-    image_size = im.size
-    print('image size =  {}'.format(image_size))
+    #############################################################
+    ###   Visualizing predictions and creating output video   ###
+    #############################################################
 
-    # reset tf graph
-    tf.reset_default_graph()
+    def visualize_pred(self, image_in, tfrecord_file, predictions_list):
 
-    # Pipeline of dataset and iterator
-    dataset = tf.data.TFRecordDataset([tfrecord_file])
-    dataset = dataset.map(parse)
-    iterator = dataset.make_one_shot_iterator()
-    next_image_data = iterator.get_next()
+        # Pipeline of dataset and iterator
+        dataset = tf.data.TFRecordDataset([tfrecord_file])
+        dataset = dataset.map(parse)
+        iterator = dataset.make_one_shot_iterator()
+        next_image_data = iterator.get_next()
 
-    num_of_stixels = len(predictions_list)
-    print('Number of stixels to be proceesed  {}'.format(num_of_stixels))
+        num_of_stixels = len(predictions_list)
+        print('Number of stixels to be proceesed  {}'.format(num_of_stixels))
 
-    # Prepare data structure for softmax predictions
-    grid_x_width = int((image_width-36)/5)+1
-    grid_y_width = 74
-    print('grid width = {}'.format(grid_x_width))
-    #grid = np.zeros((grid_y_width,grid_x_width))
-
-    # Create data grid
-    x = np.linspace(0, grid_x_width - 1, grid_x_width)*5 + 18 - 3 # reduce 3 to center the probability points
-    y = np.linspace(0, grid_y_width - 1, grid_y_width)*5 - 2
-    X, Y = np.meshgrid(x, y)
-    print(np.shape(X), np.shape(Y))
-
-    # Go through the TFRecord and reconstruct the images + predictions
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+        # Go through the TFRecord and reconstruct the images + predictions
 
         # Init new image
-        new_im = Image.new('RGB', (image_width, 370))
-        grid = np.zeros((grid_y_width, grid_x_width))
+        new_im = Image.new('RGB', (self.image_width, 370))
+        grid = np.zeros((self.grid_y_width, self.grid_x_width))
         x_offset = 0
         first_time = True
         fig, ax = plt.subplots()
 
         # Go through all the stixels in the tfrecord file
-        #for i in range(177):
         for i in range(num_of_stixels):
-
-            image_data = sess.run(next_image_data)
+            image_data = self.sess.run(next_image_data)
             image = image_data[0]['image']
             im = Image.fromarray(np.uint8(image))
             frame_id = image_data[1]
@@ -217,7 +243,7 @@ def visualize_pred(image_in, tfrecord_file, predictions_list, image_width, out_f
             # Collect and visualize stixels
             new_im.paste(im, (frame_id * 5, 0))
             x_offset += 5
-            if debug_image:
+            if self.debug_image:
                 plt.plot(int(params.image_width / 2) + 5 * (frame_id), prediction * 5, marker='o', markersize=4, color="red")
             # visualize probabilities
             grid[:,frame_id] = prediction_softmax
@@ -231,12 +257,12 @@ def visualize_pred(image_in, tfrecord_file, predictions_list, image_width, out_f
         best_path_points = []
         for index, path in enumerate(best_path):
             best_path_points.append([int(params.image_width / 2) + index*5, path*5 + 2])
-        plt.plot(np.array(best_path_points)[:,0], np.array(best_path_points)[:,1], color="blue", linewidth=plot_border_width)
+        plt.plot(np.array(best_path_points)[:,0], np.array(best_path_points)[:,1], color="blue", linewidth=self.plot_border_width)
 
         # If labeles exist and not in debug mode, plot the labels
         annotation_in = image_in.replace('.jpg', '.csv')
-        if os.path.exists(annotation_in) and not debug_image:
-            del_y = image_size[1] - 370
+        if os.path.exists(annotation_in) and not self.debug_image:
+            del_y = self.image_size[1] - 370
             # Init from the CSV file
             with open(annotation_in) as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
@@ -250,109 +276,69 @@ def visualize_pred(image_in, tfrecord_file, predictions_list, image_width, out_f
 
             plt.plot(np.array(label_coords)[:, 0], np.array(label_coords)[:, 1], color="red", linewidth=1.0)
 
-        if debug_image:
+        if self.debug_image:
             #In debug mode plot the softmax probabilities
             grid = np.ma.masked_array(grid, grid < .0001)
-            plt.pcolormesh(X, Y, grid, norm=colors.LogNorm(), alpha = 0.75)
+            plt.pcolormesh(self.X, self.Y, grid, norm=colors.LogNorm(), alpha = 0.75)
         plt.imshow(new_im, cmap='gray', alpha=1.0, interpolation='none')
 
-        name = ' {} N{}_T{}_Tr{}.jpg'.format(model_name, N, T, W_trans)
-        if debug_image:
+        name = ' {} N{}_T{}_Tr{}.jpg'.format(self.model_name, N, T, W_trans)
+        if self.debug_image:
             name.replace('.jpg',' debug.jpg')
-            name = ' {} N{}_T{}_Tr{} debug.jpg'.format(model_name, N, T, W_trans)
+            name = ' {} N{}_T{}_Tr{} debug.jpg'.format(self.model_name, N, T, W_trans)
             print('replacing name to indicate debug !!!!!!')
             print(name)
-        image_out_name = image_in.replace('.jpg', name)
+
+        image_out_name = os.path.basename(image_in)
+        image_out_name = image_out_name.replace('.jpg', name)
         image_out_name = os.path.basename(image_out_name)
-        image_file_name = os.path.join(out_folder, image_out_name)
+        image_file_name = os.path.join(self.out_folder, image_out_name)
         plt.savefig(image_file_name, format='jpg')
         print('saving fig to ', image_file_name)
 
-        if show_images:
+        if self.show_images:
             plt.show()
         plt.close()
 
 
-######################################
-### translate image ro a TFRecord ###
-#####################################
+    ######################################
+    ### translate image ro a TFRecord ###
+    #####################################
 
-def image_2_tfrec(image_in, tfrec_filename, model_stixel_width):
+    def image_2_tfrec(self, image_in, tfrec_filename, model_stixel_width):
 
-    start_time = time.time()
-    # Create TFRec writer
-    os.chdir(os.path.dirname(image_in))
-    if not (glob.glob(tfrec_filename)):
-        print('output file = ', tfrec_filename)
-        writer = tf.python_io.TFRecordWriter(tfrec_filename)
-        # parse the image and save it to TFrecord
-        f_to_stx = Frame2StxTfrecords(image_in, image_in.replace('.jpg','.csv'), writer, os.path.dirname(image_in), model_stixel_width, 'test')
-        f_to_stx.create_stx(False)
-        writer.close()
-        duration = time.time() - start_time
-        print('TFRec creation took {} sec'.format(int(duration)))
-    else:
-        print('tfrecord already exists - skipping TFrec creation!!')
+        start_time = time.time()
+        # Create TFRec writer
+        os.chdir(os.path.dirname(image_in))
+        if not (glob.glob(tfrec_filename)):
+            print('output file = ', tfrec_filename)
+            writer = tf.python_io.TFRecordWriter(tfrec_filename)
+            # parse the image and save it to TFrecord
+            f_to_stx = Frame2StxTfrecords(image_in, image_in.replace('.jpg','.csv'), writer, os.path.dirname(image_in), model_stixel_width, 'test')
+            f_to_stx.create_stx(False)
+            writer.close()
+            duration = time.time() - start_time
+            print('TFRec creation took {} sec'.format(int(duration)))
+        else:
+            print('tfrecord already exists - skipping TFrec creation!!')
 
-##############################################################
-###                           main                         ###
-##############################################################
+    ######################################
+    ###      start a new prediction   ###
+    #####################################
 
-def main(image_in, image_out_dir, model_dir, image_width, debug_image, show_images):
+    def predict(self, image_in):
 
-    model_name = os.path.basename(model_dir)
+        # Translate the image to a TF record
+        tfrec_filename = image_in.replace('.jpg', '_W' + str(self.W) + '.tfrecord')
+        self.image_2_tfrec(image_in, tfrec_filename, self.W)
+        data_files = {'test': tfrec_filename}
+        predictions = self.estimator.predict(input_fn=lambda: dataset_input_fn('test', data_files))
 
-    # Restore model.py that was saved in model directory
-    os.chdir(model_dir)
-    sys.path.insert(0, os.getcwd())
-    if os.path.exists(model_dir + '/model_for_CRF.py'):
-        from model_for_CRF import model_fn, params
-    else:
-        print('No model file within directory - exiting!!!!')
-        os.exit()
+        # Predict!
+        predictions_list = list(predictions)
 
-    W = params.image_width
-
-    # If required create required folder
-    image_out_dir = image_out_dir + '/' + model_name
-    if not os.path.exists(image_out_dir) and not os.path.isdir(image_out_dir):
-        os.mkdir(image_out_dir)
-
-    # Translate the image to a TF record
-    tfrec_filename = image_in.replace('.jpg','_W' + str(W) + '.tfrecord')
-    print(tfrec_filename)
-    image_2_tfrec(image_in, tfrec_filename, W)
-
-    # Predict + visualize the output image
-    tf.logging.set_verbosity(tf.logging.INFO)  # possible values - DEBUG / INFO / WARN / ERROR / FATAL
-
-    # Load the model
-    estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)
-
-    data_files = {'test': tfrec_filename}
-    start_time = time.time()
-    predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test', data_files))
-
-    '''
-    hooks = [tf_debug.TensorBoardDebugHook(grpc_debug_server_addresses="dev:6064")]    
-    predictions = estimator.predict(input_fn=lambda: dataset_input_fn('test'), hooks = hooks)
-    '''
-    # Print prediction duration
-    duration = time.time() - start_time
-    print('prediction took {}ms'.format(duration * 1000))
-
-    # Predict!
-    predictions_list = list(predictions)
-
-    # Visualize predictions based on single test TFrecord
-    visualize_pred(image_in, tfrec_filename, predictions_list, image_width, image_out_dir, model_name, debug_image=debug_image, show_images=show_images)
-
-    # Print tensorboard data
-    print('tensorboard --logdir=' + str(model_dir) + '--port 6006')
-    # print('tensorboard --logdir=' + str(model_dir) + '--port 6006 --debugger_port 6064')
-
-
-    # Save output file
+        # Visualize predictions based on single test TFrecord
+        self.visualize_pred(image_in, tfrec_filename, predictions_list)
 
 
 if __name__ == '__main__':
@@ -366,6 +352,7 @@ if __name__ == '__main__':
         print('no such file')
         os.exit()
 
+    '''
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
     # image_filename = askopenfilename(initialdir='/media/vision/In Process/ForAnnotation/GC23_fixes')  # show an "Open" dialog box and return the path to the selected file
@@ -374,16 +361,36 @@ if __name__ == '__main__':
         filetypes=[('JPG file', '*.jpg')])  # show an "Open" dialog box and return the path to the selected file
     root.destroy()
     print('predict image - ' + image_in)
+    '''
 
     image_out_dir = os.path.dirname(image_in)
 
     # Determine the model
     model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
+    model_name = os.path.basename(model_dir)
 
-    main(image_in, image_out_dir, model_dir, image_width, True, show_images = True)
+    os.chdir(model_dir)
+    sys.path.insert(0, os.getcwd())
+    if os.path.exists(model_dir + '/model_for_CRF.py'):
+        from model_for_CRF import model_fn, params
+    else:
+        print('No model file within directory - exiting!!!!')
+        os.exit()
 
+    # If required, create required folder
+    image_out_dir = image_out_dir + '/' + model_name
+    if not os.path.exists(image_out_dir) and not os.path.isdir(image_out_dir):
+        os.mkdir(image_out_dir)
 
+    # Create image_predictor object
+    predictor = image_predictor(image_in, image_out_dir, image_width, model_dir, debug_image=False, show_images=False)
+    predictor.predict(image_in)
 
+    image_in = '/media/vision/Results/image_for_predict/frame_000136.jpg'
+    predictor.predict(image_in)
+
+    # Close the session
+    predictor.close_session()
 
 
 

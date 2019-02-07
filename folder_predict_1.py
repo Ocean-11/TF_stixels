@@ -5,15 +5,17 @@
 
 import os
 import glob
+import sys
 
 if __name__ == '__main__':
 
     create_video = False
 
     image_width = 476  # when image width = 480
-    in_folder_name = '/media/vision/Results/image_for_predict'
+    #in_folder_name = '/media/vision/Results/image_for_predict'
     #in_folder_name = '/media/vision/Results/test_video_GC23_1'
     #in_folder_name = '/media/vision/Results/test_video_GC23_2'
+    in_folder_name = '/media/vision/Results/test_video_Site40_1'
     #in_folder_name = 'test_video_GC23_2'
     #in_folder_name = 'test_video_Site40_1'
     #in_folder_name = 'test_video_single'
@@ -38,18 +40,29 @@ if __name__ == '__main__':
     model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
     model_name = os.path.basename(model_dir)
 
+    os.chdir(model_dir)
+    sys.path.insert(0, os.getcwd())
 
-    import image_predict
+    image_out_dir = in_folder_name + '/' + model_name
+    if not os.path.exists(image_out_dir) and not os.path.isdir(image_out_dir):
+        os.mkdir(image_out_dir)
 
-    #image_in = '/media/vision/Results/image_for_predict/frame_000142.jpg'
-    #out_folder_name = os.path.dirname(image_in)
-
-    out_folder_name = in_folder_name
-
-
+    '''
     for image in images:
         image_predict.main(image, out_folder_name, model_dir, image_width, False, show_images=False)
+        '''
 
+    # Create image_predictor object
+    from image_predict_1 import image_predictor
+    predictor = image_predictor(images[0], image_out_dir, image_width, model_dir, debug_image=True, show_images=False)
+
+    # Run through the images and create predictions & visulizations
+    for image in images:
+        #image_predict.main(image, out_folder_name, model_dir, image_width, False, show_images=False)
+        predictor.predict(image)
+
+    # Close the session
+    predictor.close_session()
 
     if create_video:
         import video
