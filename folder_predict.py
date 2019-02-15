@@ -60,7 +60,7 @@ if __name__ == '__main__':
         '''
 
     # Create image_predictor object
-    from image_predict_1 import image_predictor
+    from image_predict import image_predictor
     predictor = image_predictor(images[0], image_out_dir, image_width, model_dir, debug_image=True, show_images=False)
 
     # Run through the images and create predictions & visulizations

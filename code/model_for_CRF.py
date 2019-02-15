@@ -429,6 +429,18 @@ def parse(serialized):
 ###################################
 
 
+'''
+params = tf.contrib.training.HParams(
+    learning_rate=0.001,
+    train_epochs=250,
+    batch_size=32,
+    image_height=370,
+    image_width=W,
+    image_depth=1
+) # NOTE image_depth reduced to 1 to support BW
+'''
+
+# StixelNet initial params (note that params.learning_rate was not used)
 params = tf.contrib.training.HParams(
     learning_rate=0.001,
     train_epochs=250,
@@ -437,18 +449,6 @@ params = tf.contrib.training.HParams(
     image_width=W,
     image_depth=3
 )
-
-'''
-# StixelNet initial params (note that params.learning_rate was not used)
-params = tf.contrib.training.HParams(
-    learning_rate=0.001,
-    train_epochs=250,
-    batch_size=32,
-    image_height=370,
-    image_width=24,
-    image_depth=3
-)
-'''
 
 # Run Configuration
 config = tf.estimator.RunConfig(
