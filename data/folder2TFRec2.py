@@ -369,8 +369,6 @@ def main(data_dir, stixel_width, isControl = True):
 
 if __name__ == '__main__':
 
-
-
     ' when executed as a script, open a GUI window to select the presented TFrecord file '
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing

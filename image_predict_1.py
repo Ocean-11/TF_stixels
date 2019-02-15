@@ -15,8 +15,8 @@ from tkinter import filedialog
 import tkinter as tk
 import sys
 import time
+#from TF_stixels.data.folder2TFRec2_BW import Frame2StxTfrecords  # NEW: use the special version to extract frame id's rather than labels!!!!!!
 from TF_stixels.data.folder2TFRec2 import Frame2StxTfrecords  # NEW: use the special version to extract frame id's rather than labels!!!!!!
-import cv2
 import csv
 
 # params
@@ -261,7 +261,7 @@ class image_predictor:
 
         # If labeles exist and not in debug mode, plot the labels
         annotation_in = image_in.replace('.jpg', '.csv')
-        if os.path.exists(annotation_in) and not self.debug_image:
+        if os.path.exists(annotation_in):
             del_y = self.image_size[1] - 370
             # Init from the CSV file
             with open(annotation_in) as csv_file:
@@ -274,7 +274,14 @@ class image_predictor:
                     plt.plot(x_coord, y_coord, marker='o', markersize=5, color="red")
                     label_coords.append([x_coord, y_coord])
 
-            plt.plot(np.array(label_coords)[:, 0], np.array(label_coords)[:, 1], color="red", linewidth=1.0)
+            # Compute the prediction accuracy
+
+
+            # If not in debug mode, display the labels
+            if not self.debug_image:
+                plt.plot(np.array(label_coords)[:, 0], np.array(label_coords)[:, 1], color="red", linewidth=1.0)
+
+
 
         if self.debug_image:
             #In debug mode plot the softmax probabilities
@@ -346,6 +353,7 @@ if __name__ == '__main__':
     from tkinter.filedialog import askopenfilename
 
     # Determine input image
+    #image_in = '/media/vision/Results/test_video_BW/frame_000041_BW_BW_RGB_format.jpg'
     image_in = '/media/vision/Results/image_for_predict/frame_000142.jpg'
     image_width = 476
     if not os.path.exists(image_in):
@@ -366,7 +374,8 @@ if __name__ == '__main__':
     image_out_dir = os.path.dirname(image_in)
 
     # Determine the model
-    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250' # Last RGB training
+    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-02-14_20-17-53_EP_250'
     model_name = os.path.basename(model_dir)
 
     os.chdir(model_dir)
@@ -383,7 +392,7 @@ if __name__ == '__main__':
         os.mkdir(image_out_dir)
 
     # Create image_predictor object
-    predictor = image_predictor(image_in, image_out_dir, image_width, model_dir, debug_image=False, show_images=False)
+    predictor = image_predictor(image_in, image_out_dir, image_width, model_dir, debug_image=True, show_images=False)
     predictor.predict(image_in)
 
     image_in = '/media/vision/Results/image_for_predict/frame_000136.jpg'

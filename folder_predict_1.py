@@ -11,15 +11,20 @@ if __name__ == '__main__':
 
     create_video = False
 
-    image_width = 476  # when image width = 480
+    #image_width = 476  # when image width = 480
     #in_folder_name = '/media/vision/Results/image_for_predict'
     #in_folder_name = '/media/vision/Results/test_video_GC23_1'
+    #in_folder_name = '/media/vision/Results/test_video_GC23_1_BW'
     #in_folder_name = '/media/vision/Results/test_video_GC23_2'
-    in_folder_name = '/media/vision/Results/test_video_Site40_1'
+    #in_folder_name = '/media/vision/Results/test_video_Site40_1'
+    #in_folder_name = '/media/vision/Results/test_video_BW'
     #in_folder_name = 'test_video_GC23_2'
     #in_folder_name = 'test_video_Site40_1'
-    #in_folder_name = 'test_video_single'
+    #in_folder_name = 'test_video_single'in_folder_name = '/media/vision/Results/test_video_Site40_1'
     #in_folder_name = 'test_video_NLSite_1'
+
+    image_width = 551 # image width = 555
+    in_folder_name = '/media/vision/Results/test_video_sessionA_1'
 
     '''
     in_folder_name = 'test_video_UKSite4GC'
@@ -37,7 +42,9 @@ if __name__ == '__main__':
     out_folder_name = in_folder_name
 
     # Determine the model to be used for inference
-    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
+    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-02-14_20-17-53_EP_250'
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-02-10_17-43-39_EP_250' # BW model!!
     model_name = os.path.basename(model_dir)
 
     os.chdir(model_dir)

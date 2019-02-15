@@ -56,8 +56,8 @@ def main(data_dir, x_min, x_max):
 if __name__ == '__main__':
 
     # Params
-    x_min = 130
-    x_max = 530
+    x_min = 45
+    x_max = 600
 
     ' when executed as a script, open a GUI window to select the presented TFrecord file '
     root = tk.Tk()
