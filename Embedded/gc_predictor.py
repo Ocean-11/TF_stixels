@@ -5,7 +5,7 @@
 import tensorflow as tf
 import os
 import numpy as np
-from TF_stixels.code.model import model_fn, params
+#from TF_stixels.code.model import model_fn, params
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import glob
@@ -248,30 +248,6 @@ class image_predictor:
             best_path_points.append([int(params.image_width / 2) + index*5, path*5 + 2])
         plt.plot(np.array(best_path_points)[:,0], np.array(best_path_points)[:,1], color="blue", linewidth=self.plot_border_width)
 
-        # If labeles exist and not in debug mode, plot the labels
-        '''
-        annotation_in = image_in.replace('.jpg', '.csv')
-        if os.path.exists(annotation_in):
-            del_y = self.image_size[1] - 370
-            # Init from the CSV file
-            with open(annotation_in) as csv_file:
-                csv_reader = csv.reader(csv_file, delimiter=',')
-                label_coords = []
-                for index, row in enumerate(csv_reader):
-                    new_tuple = tuple(row)
-                    x_coord = int(new_tuple[0])
-                    y_coord = max(int(new_tuple[1]) - del_y, 0)
-                    plt.plot(x_coord, y_coord, marker='o', markersize=5, color="red")
-                    label_coords.append([x_coord, y_coord])
-
-            # Compute the prediction accuracy ........
-
-
-            # If not in debug mode, display the labels
-            if not self.debug_image:
-                plt.plot(np.array(label_coords)[:, 0], np.array(label_coords)[:, 1], color="red", linewidth=1.0)
-                '''
-
         if self.debug_image:
             #In debug mode plot the softmax probabilities
             grid = np.ma.masked_array(grid, grid < .0001)
@@ -306,17 +282,16 @@ class image_predictor:
         start_time = time.time()
         # Create TFRec writer
         os.chdir(os.path.dirname(image_in))
-        if not (glob.glob(tfrec_filename)):
-            print('output file = ', tfrec_filename)
-            writer = tf.python_io.TFRecordWriter(tfrec_filename)
-            # parse the image and save it to TFrecord
-            f_to_stx = Frame2StxTfrecords(image_in, image_in.replace('.jpg','.csv'), writer, os.path.dirname(image_in), model_stixel_width, 'test')
-            f_to_stx.create_stx(False)
-            writer.close()
-            duration = time.time() - start_time
-            print('TFRec creation took {} sec'.format(int(duration)))
-        else:
-            print('tfrecord already exists - skipping TFrec creation!!')
+        print('TFRec output file = ', tfrec_filename)
+        writer = tf.python_io.TFRecordWriter(tfrec_filename)
+
+        # parse the image and save it to TFrecord
+        f_to_stx = Frame2StxTfrecords(image_in, writer, model_stixel_width)
+        f_to_stx.create_stx(False)
+        writer.close()
+
+        duration = time.time() - start_time
+        print('TFRec creation took {} sec'.format(int(duration)))
 
     ######################################
     ###      start a new prediction   ###
@@ -335,7 +310,6 @@ class image_predictor:
 
         # Visualize predictions based on single test TFrecord
         self.visualize_pred(image_in, tfrec_filename, predictions_list)
-
 
 if __name__ == '__main__':
 
