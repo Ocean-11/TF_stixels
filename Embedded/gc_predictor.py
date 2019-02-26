@@ -12,9 +12,8 @@ import glob
 from PIL import Image
 import sys
 import time
-#from TF_stixels.data.folder2TFRec2 import Frame2StxTfrecords
 from gc_image2TFRec import Frame2StxTfrecords
-import csv
+#import csv
 
 # params
 H = 370
@@ -250,6 +249,7 @@ class image_predictor:
         plt.plot(np.array(best_path_points)[:,0], np.array(best_path_points)[:,1], color="blue", linewidth=self.plot_border_width)
 
         # If labeles exist and not in debug mode, plot the labels
+        '''
         annotation_in = image_in.replace('.jpg', '.csv')
         if os.path.exists(annotation_in):
             del_y = self.image_size[1] - 370
@@ -270,7 +270,7 @@ class image_predictor:
             # If not in debug mode, display the labels
             if not self.debug_image:
                 plt.plot(np.array(label_coords)[:, 0], np.array(label_coords)[:, 1], color="red", linewidth=1.0)
-
+                '''
 
         if self.debug_image:
             #In debug mode plot the softmax probabilities
