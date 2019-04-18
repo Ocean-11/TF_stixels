@@ -83,8 +83,10 @@ def main(data_dir, target_dir, stixel_width):
 
 if __name__ == '__main__':
 
-    data_dir = '/media/vision/DataRepo'
-    target_dir = '/media/vision/Datasets/Dataset_14'
+    #data_dir = '/media/vision/DataRepo'
+    data_dir = '/media/dnn/ML/DataRepo'
+    #target_dir = '/media/vision/Datasets/Dataset_19'
+    target_dir = '/media/dnn/ML/Datasets/Dataset_19'
     stixel_width = 36
     print('Extract files from DataRepo - ' + data_dir + ':')
 

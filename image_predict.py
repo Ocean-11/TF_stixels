@@ -5,7 +5,8 @@
 import tensorflow as tf
 import os
 import numpy as np
-from TF_stixels.code.model import model_fn, params
+#from TF_stixels.code.model import model_fn, params
+from code.model import model_fn, params
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from tensorflow.python import debug as tf_debug # for debugging
@@ -16,7 +17,7 @@ import tkinter as tk
 import sys
 import time
 #from TF_stixels.data.folder2TFRec2_BW import Frame2StxTfrecords  # NEW: use the special version to extract frame id's rather than labels!!!!!!
-from TF_stixels.data.folder2TFRec2 import Frame2StxTfrecords  # NEW: use the special version to extract frame id's rather than labels!!!!!!
+from data.folder2TFRec2 import Frame2StxTfrecords  # NEW: use the special version to extract frame id's rather than labels!!!!!!
 import csv
 
 # params
@@ -392,7 +393,7 @@ if __name__ == '__main__':
         os.mkdir(image_out_dir)
 
     # Create image_predictor object
-    predictor = image_predictor(image_in, image_out_dir, image_width, model_dir, debug_image=True, show_images=False)
+    predictor = image_predictor(image_in, image_out_dir, image_width, model_dir, debug_image=True, show_images=True)
     predictor.predict(image_in)
 
     image_in = '/media/vision/Results/image_for_predict/frame_000136.jpg'

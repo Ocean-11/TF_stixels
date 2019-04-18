@@ -329,7 +329,7 @@ def model_fn(features, labels, mode, params):
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         #print('Learning rate = {}'.format(learning_rate))
 
-        # for learning parameters of batch normalization:
+        # for learning parameters of batch normalizatiobbbbbbbbbbbbbbn:
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
             train_op = optimizer.minimize(loss, global_step=tf.train.get_or_create_global_step())
@@ -387,7 +387,7 @@ params = tf.contrib.training.HParams(
     learning_rate=0.001,
     train_epochs=250,
     batch_size=32,
-    image_height=370,
+    image_height=H,
     image_width=W,
     image_depth=3
 )
@@ -398,7 +398,7 @@ params = tf.contrib.training.HParams(
     learning_rate=0.001,
     train_epochs=250,
     batch_size=32,
-    image_height=370,
+    image_height=H,
     image_width=24,
     image_depth=3
 )

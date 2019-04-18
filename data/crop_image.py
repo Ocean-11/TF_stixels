@@ -47,6 +47,7 @@ def main(data_dir, x_min, x_max):
         img = mpimg.imread(frame_path)
         height, width, c = img.shape
         cropped_img = img[0:height + height, x_min:x_max, :]
+        #cropped_img = img[0:height-100, x_min:x_max, :]
         image_file_name = os.path.join(data_dir, os.path.basename(frame_path))
 
         from PIL import Image
@@ -56,8 +57,8 @@ def main(data_dir, x_min, x_max):
 if __name__ == '__main__':
 
     # Params
-    x_min = 45
-    x_max = 600
+    x_min = 150  #45
+    x_max = 490 #600
 
     ' when executed as a script, open a GUI window to select the presented TFrecord file '
     root = tk.Tk()

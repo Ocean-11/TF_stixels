@@ -445,7 +445,7 @@ params = tf.contrib.training.HParams(
     learning_rate=0.001,
     train_epochs=250,
     batch_size=32,
-    image_height=370,
+    image_height=H,
     image_width=W,
     image_depth=3
 )

@@ -1,4 +1,23 @@
 
+'''
+*
+* crf
+*
+* Purpose: the module finds the minimum energy semi-connected path between 1st and last row
+*
+* Inputs: observations_matrix
+          N = energy "deadzone" for small transitions
+          T = threshold to allow large transitions (between obstacles)
+          W_trans =
+*
+* Outputs:
+*
+* Conventions: (x=0, y=0) is the upper left corner of the image
+*
+* Written by: Ran Zaslavsky 10-12-2018 (framework originates from excellent https://crosleythomas.github.io/blog/)
+*
+'''
+
 # from __future__ import absolute_import
 
 import numpy as np
@@ -27,7 +46,7 @@ def create_transition_matrix(dim, N, T, Wb):
     return transition_mat
 
 # implement the Viterbi dynamic programming algorithm
-# Go through the columns and compute following Viterbi function: Wu*P + Wb*min(max((|y1-y2|-N,0),T)
+# Go through the columns and compute the following Viterbi function: Wu*P + Wb*min(max((|y1-y2|-N,0),T)
 
 def viterbi(observations_matrix, N, T, W_trans):
 

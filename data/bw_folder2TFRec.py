@@ -122,7 +122,9 @@ class Frame2StxTfrecords:
     def create_stx(self, printCtrlImage):
         ' read current frame '
         img = mpimg.imread(self.frame_path)  # img is np.array of the frame
-        height, width, c = img.shape
+        c = 1
+        height, width = img.shape
+        #height, width, c = img.shape
         #print('image dimensions: h={} w={} c={}'.format(height, width, c))
         x_start = self.frame_ground_truth.x.iat[0]
         x_stop = min(self.frame_ground_truth.x.iat[-1], width)
@@ -148,12 +150,14 @@ class Frame2StxTfrecords:
             #print('\nstixel {} center = {}'.format(stixel, i))
             ' cut the lower image part (high y values)'
             if img.shape[0] == self.stx_h:
-                s = img[:, i - self.stx_half_w:i + self.stx_half_w, :]  # that's the stixel
+                s = img[:, i - self.stx_half_w:i + self.stx_half_w]  # that's the stixel (2 dimensions)
+                #s = img[:, i - self.stx_half_w:i + self.stx_half_w, :]  # that's the stixel
                 print('diff_h not defined !!!!!!!!')
                 #s = img[:, i - 12:i + 12, :]  # that's the stixel
             else:
                 diff_h = img.shape[0] - self.stx_h
-                s = img[diff_h:, i - self.stx_half_w:i + self.stx_half_w, :]  # that's the stixel
+                s = img[diff_h:, i - self.stx_half_w:i + self.stx_half_w]  # that's the stixel (2 dimensions)
+                #s = img[diff_h:, i - self.stx_half_w:i + self.stx_half_w, :]  # that's the stixel
                 # s = img[diff_h:, i - 12:i + 12, :]  # that's the stixel
 
             ' find the closest GT points '
@@ -348,17 +352,15 @@ def main(data_dir, stixel_width, isControl = True):
     with open(out_filename, 'w', newline='', encoding="utf-8") as f_output:
         csv_output = csv.writer(f_output)
         csv_output.writerows(object_labels)
-        print('writing csv file to ' + out_filename)
+        #print('writing csv file to ' + out_filename)
 
 
 if __name__ == '__main__':
 
-
-
     ' when executed as a script, open a GUI window to select the presented TFrecord file '
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
-    data_dir = filedialog.askdirectory(initialdir='/media/vision/DataRepo')
+    data_dir = filedialog.askdirectory(initialdir='/media/vision/DataRepo_BW')
     root.destroy()
 
     print('Convert to TFrecords all annotated images within - ' + data_dir + ':')

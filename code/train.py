@@ -57,7 +57,7 @@ class InitHook(tf.train.SessionRunHook):
 ###   Gather Saved Data   ###
 #############################
 
-dataset_dir = '/Dataset_14'
+dataset_dir = '/Dataset_19'
 train_dir = '../data' + dataset_dir + '/train'
 valid_dir = '../data' + dataset_dir + '/valid'
 test_dir = '../data' + dataset_dir + '/test'
@@ -151,6 +151,35 @@ def load_dataset(mode):
     return dataset
 
 
+#######################################
+###   Creating a dataset_input_fn   ###
+#######################################
+
+'''
+    serving_input_receiver_fn - 
+
+    Inputs:
+        mode: string specifying whether to take the inputs from training or validation data
+    Outputs:
+        features: 
+        receiver_tensors: 
+'''
+
+'''
+feature_spec = {'foo': tf.FixedLenFeature(...),
+                'bar': tf.VarLenFeature(...)}
+
+def serving_input_receiver_fn():
+  """An input receiver that expects a serialized tf.Example."""
+  serialized_tf_example = tf.placeholder(dtype=tf.string,
+                                         shape=[1],
+                                         name='input_example_tensor')
+  receiver_tensors = {'examples': serialized_tf_example}
+  features = tf.parse_example(serialized_tf_example, feature_spec)
+  return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
+  '''
+
+
 ###################################
 ###   Define Output Directory   ###
 ###################################y
@@ -172,7 +201,7 @@ file_name = file_name[0]
 train_file_stixel_width = int(file_name.split('W')[-1])
 
 if train_file_stixel_width != params.image_width:
-    print('train images do not match the model stixels width!!!')
+    print('train images do not match the model stixels width!!! - {},{}'.format(train_file_stixel_width, params.image_width))
     sys.exit()
 
 #############################
@@ -236,6 +265,39 @@ for e in range(params.train_epochs):
     estimator.evaluate(input_fn=lambda: dataset_input_fn('valid'))
 
 print('tensorboard --logdir=' + str(model_dir))
+
+
+def make_serving_input_receiver_fn():
+    inputs = {'image': tf.placeholder(
+        shape=[None, params.image_height, params.image_width, params.image_depth], dtype=tf.float32, name='serving_input_image')}
+    return tf.estimator.export.build_raw_serving_input_receiver_fn(inputs)
+
+
+export_dir = os.path.join(model_dir, 'export')
+
+if tf.gfile.Exists(export_dir):
+    tf.gfile.DeleteRecursively(export_dir)
+
+estimator.export_savedmodel(
+    export_dir_base=export_dir,
+    serving_input_receiver_fn=make_serving_input_receiver_fn(),
+    strip_default_attrs=True)
+
+
+
+# Export the trained estimator - XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#estimator.export_savedmodel(export_dir_base, serving_input_receiver_fn, strip_default_attrs=True)
+
+#This method builds a new graph by first calling the serving_input_receiver_fn() to obtain feature
+#Tensors, and then calling this Estimator's model_fn() to generate the model graph based on those
+#features. It starts a fresh Session, and, by default, restores the most recent checkpoint into it.
+#(A different checkpoint may be passed, if needed.) Finally it creates a time-stamped export
+# directory below the given export_dir_base (i.e., export_dir_base/<timestamp>),
+# and writes a SavedModel into it containing a single MetaGraphDef saved from this Session.
+
+
+
+
 
 '''
 ' Code for warm start: '
