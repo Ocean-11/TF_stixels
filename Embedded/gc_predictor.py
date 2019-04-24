@@ -300,6 +300,8 @@ class image_predictor:
     def predict(self, image_in):
 
         # Translate the image to a TF record
+        start_time = time.time()
+        print('start prediction')
         tfrec_filename = image_in.replace('.jpg', '_W' + str(self.W) + '.tfrecord')
         self.image_2_tfrec(image_in, tfrec_filename, self.W)
         data_files = {'test': tfrec_filename}
@@ -308,8 +310,12 @@ class image_predictor:
         # Predict!
         predictions_list = list(predictions)
 
+        duration = time.time() - start_time
+        print('Prediction took {} sec'.format(int(duration)))
+
         # Visualize predictions based on single test TFrecord
         self.visualize_pred(image_in, tfrec_filename, predictions_list)
+
 
 if __name__ == '__main__':
 

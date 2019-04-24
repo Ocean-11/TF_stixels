@@ -12,7 +12,7 @@ import sys
 import time
 
 # params
-H = 370
+#H = 370
 C = 3
 
 
@@ -105,7 +105,7 @@ def parse(serialized):
     return {'image': image}, label
 
 
-def visualize_pred(tfrecord_file, predictions_list, model_dir):
+def visualize_pred(tfrecord_file, predictions_list, model_dir, stixel_height):
     # define the output folder
     model_dirname = os.path.basename(model_dir)
     output_folder = os.path.dirname(os.path.abspath(tfrecord_file)) + '/' + model_dirname
@@ -121,7 +121,7 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
     next_image_data = iterator.get_next()
 
     num_of_stixels = len(predictions_list)
-    new_im = Image.new('RGB', (params.image_width + 5 * (num_of_stixels-1), 370))
+    new_im = Image.new('RGB', (params.image_width + 5 * (num_of_stixels-1), stixel_height))
     x_offset = 0
     labels = []
 
@@ -161,7 +161,7 @@ def visualize_pred(tfrecord_file, predictions_list, model_dir):
         plt.close()
 
 
-def main(test_dir, model_dir, model_stixel_width):
+def main(test_dir, model_dir, model_stixel_width, stixel_height):
 
     # RAN - Setup logger - only displays the most important warnings
     tf.logging.set_verbosity(tf.logging.INFO)  # possible values - DEBUG / INFO / WARN / ERROR / FATAL
@@ -214,7 +214,7 @@ def main(test_dir, model_dir, model_stixel_width):
         #print('prediction = {}'.format(predicted_label))
 
         # Visualize predictions based on single test TFrecord
-        visualize_pred(test_file, predictions_list, model_dir)
+        visualize_pred(test_file, predictions_list, model_dir, stixel_height)
 
     # Print tensorboard data
     print('tensorboard --logdir=' + str(model_dir) + '--port 6006')
@@ -240,11 +240,12 @@ if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
     from model import model_fn, params
     W = params.image_width
+    stixel_height = params.image_height
 
     # Make sure the chosen directory contains a valid model file before calling main()
     if os.path.exists(model_dir + '/model.py'):
         print('Model file exists')
-        main(test_dir, model_dir, W)
+        main(test_dir, model_dir, W, stixel_height)
     else:
         print('No model file within directory - exiting!!!!')
 

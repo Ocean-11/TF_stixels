@@ -7,8 +7,7 @@
 *
 * Inputs:
 *
-*
-* Outputs:
+* Outputs: ArgMax + softmax predictions
 *
 *
 * Conventions: (x=0, y=0) is the upper left corner of the image
@@ -22,8 +21,8 @@ from tensorflow.contrib.layers.python.layers import utils
 import os
 
 # params - defining the stixel dimensions for the entire toolchain (RAN)
-H = 370
-W = 36 # was 24
+H = 222 # was 370
+W = 24 # 36 # was 24
 C = 3
 
 ' the next four cells are a modification of https://github.com/xiaochus/MobileNetV2/blob/master/mobilenet_v2.py '
@@ -213,7 +212,8 @@ def MobileNetV2(inputs, k, is_training):
     with tf.variable_scope("IRblock-5"):
         x = _inverted_residual_block(inputs=x, filters=96, kernel=(3, 3), t=6, strides=1, n=3, is_training=is_training)
 
-    x = tf.layers.average_pooling2d(inputs=x, pool_size=(24, 2), strides=(1, 1))
+    #x = tf.layers.average_pooling2d(inputs=x, pool_size=(24, 2), strides=(1, 1)) # for H=370 stixels!!!!!
+    x = tf.layers.average_pooling2d(inputs=x, pool_size=(10, 2), strides=(1, 1)) # for H=146 stixels!!!!!
 
     # Eventually this should be replaced with:
     x = tf.layers.flatten(x)
@@ -443,7 +443,7 @@ params = tf.contrib.training.HParams(
 # StixelNet initial params (note that params.learning_rate was not used)
 params = tf.contrib.training.HParams(
     learning_rate=0.001,
-    train_epochs=250,
+    train_epochs=100,
     batch_size=32,
     image_height=H,
     image_width=W,

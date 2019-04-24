@@ -1,12 +1,9 @@
 '''
 *
-* folder2TFRec()
+* folder2TFRec2()
 *
-* Purpose: the module receives a directory name, creates train/valid/test/control/meta_data
-*          folders, and scans it's "annotated" folder, translating annotated images into
-*          stixels TFrecords. Note that lowest bound limit stixels diluted by a factor of 2
-*          to reduce classification bias
-*
+* Purpose: the module receives a directory name, and create a TFRecord for prediction purposes
+*          (so Ground truth is not used ..)
 *
 * Inputs:
 *   frame_path - annotated image path
@@ -43,7 +40,7 @@ import io
 import tkinter as tk
 from tkinter import filedialog
 import csv
-from TF_stixels.code.model import params
+from code.model import params
 import random
 import shutil
 
@@ -51,11 +48,12 @@ TRAIN_IMAGES_RATIO = 80
 VALID_IMAGES_RATIO = 15
 
 class Frame2StxTfrecords:
-    def __init__(self, frame_path, GT_file_path, writer,control_dir, stixel_width, frame_type):
+    def __init__(self, frame_path, GT_file_path, writer, control_dir, stixel_width, frame_type, stixel_height = 370):
         ' Define stixels dimensions'
         self.stx_w = stixel_width  # stixel width
         self.stx_half_w = int(self.stx_w/2)
-        self.stx_h = 370  # stixel height
+        self.stx_h = stixel_height  # stixel height
+        #self.stx_h = 370  # stixel height
         self.bin_pixels = 5  # stixel bins height
         self.stride = 5  # stride used to split to the frame
         ' init internal data '

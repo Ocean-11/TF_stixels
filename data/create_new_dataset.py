@@ -20,7 +20,7 @@ import glob, os
 import shutil
 import pandas as pd
 
-def main(data_dir, target_dir, stixel_width):
+def main(data_dir, target_dir, stixel_width, stixel_height):
 
     # Gather file paths to all annotated images within the target directory (and subfolders)
     object_dirs = glob.glob(data_dir + '/*')
@@ -44,7 +44,7 @@ def main(data_dir, target_dir, stixel_width):
             os.mkdir(new_folder)
 
     object_names = list(objects.keys())
-    width_alias = '/W' + str(stixel_width)
+    dim_alias = '/H' + str(stixel_height) + '_W' + str(stixel_width)
     copy_dir_list = ['/train', '/valid', '/test']
     master_filename = os.path.join(target_dir + '/meta_data', "meta_data.csv") # defines the master CSV file name
 
@@ -52,7 +52,7 @@ def main(data_dir, target_dir, stixel_width):
     for object in object_names:
         object_path = os.path.join(data_dir, object)
         for dir_name in copy_dir_list:
-            tfrec_files = glob.glob(object_path + width_alias + dir_name + '/*.tfrecord')
+            tfrec_files = glob.glob(object_path + dim_alias + dir_name + '/*.tfrecord')
             for file in tfrec_files:
                 print('copy ' + file + ' to ' + dir_name)
                 shutil.copy(file, target_dir + dir_name)
@@ -62,7 +62,7 @@ def main(data_dir, target_dir, stixel_width):
     fout = open(master_filename, "a")
     for object in object_names:
         object_path = os.path.join(data_dir, object)
-        data_files = glob.glob(object_path + width_alias + '/meta_data' + '/*.csv')
+        data_files = glob.glob(object_path + dim_alias + '/meta_data' + '/*.csv')
         for file_ in data_files:
             print('copy ' + file_)
             shutil.copy(file_, target_dir + '/meta_data')
@@ -86,8 +86,9 @@ if __name__ == '__main__':
     #data_dir = '/media/vision/DataRepo'
     data_dir = '/media/dnn/ML/DataRepo'
     #target_dir = '/media/vision/Datasets/Dataset_19'
-    target_dir = '/media/dnn/ML/Datasets/Dataset_19'
-    stixel_width = 36
+    target_dir = '/media/dnn/ML/Datasets/Dataset_24_222_1'
+    stixel_width = 24 # 36
+    stixel_height = 222 # 370
     print('Extract files from DataRepo - ' + data_dir + ':')
 
-    main(data_dir, target_dir, stixel_width )
+    main(data_dir, target_dir, stixel_width, stixel_height )

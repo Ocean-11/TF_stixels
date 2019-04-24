@@ -40,10 +40,10 @@ create_new_dataset()
 
 ## code folder
 model()
-* the module implements a MobileNetV2 stixels model
+* the module implements a MobileNetV2 stixels model, Output = ArgMax only..
 
 model_for_CRF()
-* the same MobileNetV2 stixels model implementation outputting the Softmax probabilities as well 
+* the same MobileNetV2 stixels model implementation outputing Argmax + Softmax probabilities
 
 train()
 * the module trains a MobileNetV2 stixels model

@@ -8,7 +8,7 @@
 * Inputs:
 *
 *
-* Outputs:
+* Outputs: ArgMax(softmax) only
 *
 *
 * Conventions: (x=0, y=0) is the upper left corner of the image
@@ -22,8 +22,8 @@ from tensorflow.contrib.layers.python.layers import utils
 import os
 
 # params - defining the stixel dimensions for the entire toolchain (RAN)
-H = 370
-W = 36 # was 24
+H = 222 #was 370
+W = 24 # was 36
 C = 3
 
 ' the next four cells are a modification of https://github.com/xiaochus/MobileNetV2/blob/master/mobilenet_v2.py '
@@ -385,7 +385,7 @@ def parse(serialized):
 
 params = tf.contrib.training.HParams(
     learning_rate=0.001,
-    train_epochs=250,
+    train_epochs=100,
     batch_size=32,
     image_height=H,
     image_width=W,

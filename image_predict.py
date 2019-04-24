@@ -21,7 +21,7 @@ from data.folder2TFRec2 import Frame2StxTfrecords  # NEW: use the special versio
 import csv
 
 # params
-H = 370
+#H = 370
 C = 3
 
 # Init CRF parameters
@@ -146,7 +146,7 @@ def parse(serialized):
     return {'image': image}, frame_id
 
 class image_predictor:
-    def __init__(self, image_in, out_folder, image_width, model_dir, debug_image, show_images):
+    def __init__(self, image_in, out_folder, model_dir, debug_image, show_images):
 
         # load the correct model
         if os.path.exists(model_dir + '/model_for_CRF.py'):
@@ -155,34 +155,55 @@ class image_predictor:
         else:
             print('No model file within directory - exiting!!!!')
 
-        # Init class internal params
-        self.out_folder = out_folder
-        self.model_name = os.path.basename(model_dir)
-        self.model_dir = model_dir
-        self.image_folder = os.path.dirname(out_folder)
-        self.plot_border_width = 2.0
-        im = Image.open(image_in)
-        self.image_size = im.size
-        self.image_width = image_width
-        self.debug_image = debug_image
-        self.show_images = show_images
-        print('image size =  {}'.format(self.image_size))
-
-        self.W = params.image_width
+        # Init class internal params - folders
+        self.out_folder = out_folder                    # init output folder
+        self.model_name = os.path.basename(model_dir)   # init model name
+        self.model_dir = model_dir                      # init the model folder
+        self.image_folder = os.path.dirname(out_folder) # init input image folder
         self.model_fn = model_fn
         self.params = params
+
+        # Init class internal params - dimensions
+        im = Image.open(image_in)
+        self.image_size = im.size
+        self.W = params.image_width                     # init stixel width
+        self.H = params.image_height                    # init stixel height
+        self.stixel_stride = 5
+
+        stixels_num_float = (self.image_size[0] - self.W)/self.stixel_stride
+        uncovered_image_pix = (stixels_num_float - int(stixels_num_float)) * self.stixel_stride
+        self.image_width = int(self.image_size[0] - uncovered_image_pix)
+        # print('image width = {}, stixel_width = {}, active image width = {}'.format(im.size[0], self.W, self.image_width))
+        if (self.H == 370):
+            self.prediction_to_pixels = 5
+        elif (self.H==222):
+            self.prediction_to_pixels = 3
+        elif (self.H == 146):
+            self.prediction_to_pixels = 2
+        else:
+            print('H unrecognized!!')
+        self.y_spacing = int((self.prediction_to_pixels-1) / 2)
+        print('y spacing = {}'.format(self.y_spacing))
+
+        # Init class internal params - annotations
+        self.plot_border_width = 2.0
+        self.debug_image = debug_image
+        self.show_images = show_images
 
         # Reset tf graph
         tf.reset_default_graph()
         tf.logging.set_verbosity(tf.logging.INFO)  # possible values - DEBUG / INFO / WARN / ERROR / FATAL
 
         # Prepare data structure for softmax predictions
-        self.grid_x_width = int((self.image_width - 36) / 5) + 1
+        self.grid_x_width = int((self.image_width - self.W) / self.stixel_stride) + 1
+        #self.grid_x_width = int((self.image_width - 36) / 5) + 1
         self.grid_y_width = 74
 
         # Create data grid
-        x = np.linspace(0, self.grid_x_width - 1, self.grid_x_width) * 5 + 18 - 3  # reduce 3 to center the probability points
-        y = np.linspace(0, self.grid_y_width - 1, self.grid_y_width) * 5 - 2
+        x = np.linspace(0, self.grid_x_width - 1, self.grid_x_width) * 5 + int(self.W/2) - int((self.stixel_stride+1)/2)  # reduce 3 to center the probability points
+        #x = np.linspace(0, self.grid_x_width - 1, self.grid_x_width) * 5 + int(self.W/2) - 3
+        y = np.linspace(0, self.grid_y_width - 1, self.grid_y_width) * self.prediction_to_pixels - self.y_spacing
+        #y = np.linspace(0, self.grid_y_width - 1, self.grid_y_width) * 5 - 2 # For 370 height stixels
         self.X, self.Y = np.meshgrid(x, y)
         #print(np.shape(self.X), np.shape(self.Y))
 
@@ -218,13 +239,14 @@ class image_predictor:
         # Go through the TFRecord and reconstruct the images + predictions
 
         # Init new image
-        new_im = Image.new('RGB', (self.image_width, 370))
+        new_im = Image.new('RGB', (self.image_width, self.H))
         grid = np.zeros((self.grid_y_width, self.grid_x_width))
         x_offset = 0
         first_time = True
         fig, ax = plt.subplots()
 
         # Go through all the stixels in the tfrecord file
+        #for i in range(num_of_stixels):
         for i in range(num_of_stixels):
             image_data = self.sess.run(next_image_data)
             image = image_data[0]['image']
@@ -245,7 +267,7 @@ class image_predictor:
             new_im.paste(im, (frame_id * 5, 0))
             x_offset += 5
             if self.debug_image:
-                plt.plot(int(params.image_width / 2) + 5 * (frame_id), prediction * 5, marker='o', markersize=4, color="red")
+                plt.plot(int(params.image_width / 2) + 5 * (frame_id), prediction * self.prediction_to_pixels, marker='o', markersize=4, color="red")
             # visualize probabilities
             grid[:,frame_id] = prediction_softmax
             plt.draw()
@@ -257,13 +279,14 @@ class image_predictor:
         # Plot the CRF border line
         best_path_points = []
         for index, path in enumerate(best_path):
-            best_path_points.append([int(params.image_width / 2) + index*5, path*5 + 2])
+            best_path_points.append([int(params.image_width / 2) + index * 5, path * 5 + self.y_spacing])
         plt.plot(np.array(best_path_points)[:,0], np.array(best_path_points)[:,1], color="blue", linewidth=self.plot_border_width)
 
         # If labeles exist and not in debug mode, plot the labels
         annotation_in = image_in.replace('.jpg', '.csv')
         if os.path.exists(annotation_in):
-            del_y = self.image_size[1] - 370
+            del_y = self.image_size[1] - self.H
+            #del_y = self.image_size[1] - 370
             # Init from the CSV file
             with open(annotation_in) as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
@@ -313,22 +336,35 @@ class image_predictor:
     ### translate image ro a TFRecord ###
     #####################################
 
-    def image_2_tfrec(self, image_in, tfrec_filename, model_stixel_width):
+    def image_2_tfrec(self, image_in, tfrec_filename, model_stixel_width, model_stixel_height):
 
         start_time = time.time()
         # Create TFRec writer
         os.chdir(os.path.dirname(image_in))
+
+        print('output file = ', tfrec_filename)
+        writer = tf.python_io.TFRecordWriter(tfrec_filename)
+        # parse the image and save it to TFrecord
+        f_to_stx = Frame2StxTfrecords(image_in, image_in.replace('.jpg', '.csv'), writer, os.path.dirname(image_in),
+                                      model_stixel_width, 'test', model_stixel_height)
+        f_to_stx.create_stx(False)
+        writer.close()
+        duration = time.time() - start_time
+        print('TFRec creation took {} sec'.format(int(duration)))
+
+        '''
         if not (glob.glob(tfrec_filename)):
             print('output file = ', tfrec_filename)
             writer = tf.python_io.TFRecordWriter(tfrec_filename)
             # parse the image and save it to TFrecord
-            f_to_stx = Frame2StxTfrecords(image_in, image_in.replace('.jpg','.csv'), writer, os.path.dirname(image_in), model_stixel_width, 'test')
+            f_to_stx = Frame2StxTfrecords(image_in, image_in.replace('.jpg','.csv'), writer, os.path.dirname(image_in), model_stixel_width, 'test', model_stixel_height)
             f_to_stx.create_stx(False)
             writer.close()
             duration = time.time() - start_time
             print('TFRec creation took {} sec'.format(int(duration)))
         else:
             print('tfrecord already exists - skipping TFrec creation!!')
+            '''
 
     ######################################
     ###      start a new prediction   ###
@@ -338,7 +374,7 @@ class image_predictor:
 
         # Translate the image to a TF record
         tfrec_filename = image_in.replace('.jpg', '_W' + str(self.W) + '.tfrecord')
-        self.image_2_tfrec(image_in, tfrec_filename, self.W)
+        self.image_2_tfrec(image_in, tfrec_filename, self.W, self.H)
         data_files = {'test': tfrec_filename}
         predictions = self.estimator.predict(input_fn=lambda: dataset_input_fn('test', data_files))
 
@@ -354,12 +390,10 @@ if __name__ == '__main__':
     from tkinter.filedialog import askopenfilename
 
     # Determine input image
-    #image_in = '/media/vision/Results/test_video_BW/frame_000041_BW_BW_RGB_format.jpg'
-    image_in = '/media/vision/Results/image_for_predict/frame_000142.jpg'
-    image_width = 476
+    image_in = '/media/dnn/ML/Results/image_for_predict/12_02_2019_10_02_56_63.jpg'
+    #image_in = '/media/dnn/ML/Results/image_for_predict/frame_000142.jpg'
     if not os.path.exists(image_in):
         print('no such file')
-        os.exit()
 
     '''
     root = tk.Tk()
@@ -376,7 +410,8 @@ if __name__ == '__main__':
 
     # Determine the model
     #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250' # Last RGB training
-    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-02-14_20-17-53_EP_250'
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-04-23_12-04-16_EP_100'
+    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-04-24_12-10-14_EP_100'
     model_name = os.path.basename(model_dir)
 
     os.chdir(model_dir)
@@ -393,11 +428,11 @@ if __name__ == '__main__':
         os.mkdir(image_out_dir)
 
     # Create image_predictor object
-    predictor = image_predictor(image_in, image_out_dir, image_width, model_dir, debug_image=True, show_images=True)
+    predictor = image_predictor(image_in, image_out_dir, model_dir, debug_image=True, show_images=True)
     predictor.predict(image_in)
 
-    image_in = '/media/vision/Results/image_for_predict/frame_000136.jpg'
-    predictor.predict(image_in)
+    #image_in = '/media/dnn/ML/Results/image_for_predict/frame_000136.jpg'
+    #predictor.predict(image_in)
 
     # Close the session
     predictor.close_session()

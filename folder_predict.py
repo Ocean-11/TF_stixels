@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     create_video = False
 
-    image_width = 476  # when image width = 480
+    #image_width = 476  # when image width = 480
     #in_folder_name = '/media/vision/Results/image_for_predict'
     #in_folder_name = '/media/vision/Results/test_video_GC23_1'
     #in_folder_name = '/media/vision/Results/test_video_GC23_1_BW'
@@ -24,10 +24,10 @@ if __name__ == '__main__':
     #in_folder_name = 'test_video_NLSite_1'
 
 
-    image_width = 551 # image width = 555
+    #image_width = 551 # image width = 555
     #in_folder_name = '/media/dnn/ML/Results/test_video_session1_G'
     #in_folder_name = '/media/vision/Results/for_galit'
-    #in_folder_name = '/media/vision/Results/test_video_sessionA'
+    #in_folder_name = '/media/dnn/ML/Results/test_video_sessionA'
     in_folder_name = '/media/dnn/ML/Results/test_video_sessionA_1'
 
     #in_folder_name = '/media/dnn/ML/Results/test_video_UKSite4GC'
@@ -45,7 +45,9 @@ if __name__ == '__main__':
     out_folder_name = in_folder_name
 
     # Determine the model to be used for inference
-    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-04-10_18-44-40_EP_250'
+    model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-04-24_12-10-14_EP_100'
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-04-23_12-04-16_EP_100'
+    #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-04-10_18-44-40_EP_250'
     #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-03-07_18-36-03_EP_250'
     #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-01-28_18-57-33_EP_250'
     #model_dir = '/home/dev/PycharmProjects/stixel/TF_stixels/results/2019-02-19_18-40-42_EP_250'
@@ -67,7 +69,7 @@ if __name__ == '__main__':
 
     # Create image_predictor object
     from image_predict import image_predictor
-    predictor = image_predictor(images[0], image_out_dir, image_width, model_dir, debug_image=True, show_images=False)
+    predictor = image_predictor(images[0], image_out_dir, model_dir, debug_image=True, show_images=False)
 
     # Run through the images and create predictions & visulizations
     for image in images:

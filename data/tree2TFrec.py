@@ -3,12 +3,12 @@
 import tkinter as tk
 from tkinter import filedialog
 import glob
-import folder2TFRec
-from TF_stixels.code.model import params
+from TF_stixels.code import folder2TFRec
+from TF_stixels.code.model_for_CRF import params
 
 root = tk.Tk()
 root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
-data_dir = filedialog.askdirectory(initialdir='/media/vision/DataRepo')
+data_dir = filedialog.askdirectory(initialdir='/media/dnn/ML/DataRepo')
 root.destroy()
 
 print('Convert to TFrecords all annotated images within - ' + data_dir + ':')
@@ -21,5 +21,5 @@ objects = {}
 for dir_ in object_dirs:
     #objects[d.split('/')[-1]] = glob.glob(d + '/*.csv')  # Take the last subfolder name as the key
     print(dir_)
-    folder2TFRec.main(dir_, params.image_width, True)
+    folder2TFRec.main(dir_, params.image_width, params.image_height, True)
 

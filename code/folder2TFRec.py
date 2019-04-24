@@ -43,19 +43,19 @@ import io
 import tkinter as tk
 from tkinter import filedialog
 import csv
-from TF_stixels.code.model import params
+#from model_for_CRF import params
+from TF_stixels.code.model_for_CRF import params
 import random
-import shutil
 
 TRAIN_IMAGES_RATIO = 80
 VALID_IMAGES_RATIO = 15
 
 class Frame2StxTfrecords:
-    def __init__(self, frame_path, GT_file_path, writer,control_dir, stixel_width, frame_type):
+    def __init__(self, frame_path, GT_file_path, writer,control_dir, stixel_width, stixel_height, frame_type):
         ' Define stixels dimensions'
         self.stx_w = stixel_width  # stixel width
         self.stx_half_w = int(self.stx_w/2)
-        self.stx_h = 370  # stixel height
+        self.stx_h = stixel_height  # stixel height - 18-04-2019: was 370!!!!!!!
         self.bin_pixels = 5  # stixel bins height
         self.stride = 5  # stride used to split to the frame
         ' init internal data '
@@ -240,7 +240,7 @@ class Frame2StxTfrecords:
         return self.labels
 
 
-def main(data_dir, stixel_width, isControl = True):
+def main(data_dir, stixel_width, stixel_height, isControl = True):
 
     # Gather annotated images paths
     object_name = os.path.basename(os.path.normpath(data_dir))
@@ -256,7 +256,7 @@ def main(data_dir, stixel_width, isControl = True):
         print('Folder name: ' + object_name + 'images to be converted - {}'.format(num_images))
 
     # Create required folders
-    data_dir = data_dir+'/W'+ str(stixel_width)
+    data_dir = data_dir+'/H'+ str(stixel_height) +'_W'+ str(stixel_width)
     print(data_dir)
     if os.path.exists(data_dir) and os.path.isdir(data_dir):
         shutil.rmtree(data_dir)
@@ -275,8 +275,8 @@ def main(data_dir, stixel_width, isControl = True):
     object_labels = []
 
     # Create TFRecord writers
-    train_writer = tf.python_io.TFRecordWriter(data_dir + '/train/' + object_name + '_W' + str(stixel_width) + '.tfrecord')
-    valid_writer = tf.python_io.TFRecordWriter(data_dir + '/valid/' + object_name + '_W' + str(stixel_width) + '.tfrecord')
+    train_writer = tf.python_io.TFRecordWriter(data_dir + '/train/' + object_name + '_H' + str(stixel_height) + '_W' + str(stixel_width) + '.tfrecord')
+    valid_writer = tf.python_io.TFRecordWriter(data_dir + '/valid/' + object_name + '_H' + str(stixel_height) + '_W' + str(stixel_width) + '.tfrecord')
     print('Opening writers for ' + object_name + ' train/valid records')
     #object_stixels_list = []
 
@@ -310,13 +310,13 @@ def main(data_dir, stixel_width, isControl = True):
             frame_type = 'test'
             frame_name = os.path.basename(i.split('.')[0])
             test_writer = tf.python_io.TFRecordWriter(
-                data_dir + '/test/' + object_name + ' ' + frame_name + '_test_W' + str(stixel_width) + '.tfrecord')
+                data_dir + '/test/' + object_name + ' ' + frame_name + '_test' + '_H' + str(stixel_height) + '_W' + str(stixel_width) + '.tfrecord')
             writer = test_writer
             isTestImage = True
             print('parse: ' + frame_path + '->test')
 
         # parse the image and save it to TFrecord
-        f_to_stx = Frame2StxTfrecords(frame_path, i, writer,control_dir, stixel_width, frame_type)
+        f_to_stx = Frame2StxTfrecords(frame_path, i, writer,control_dir, stixel_width, stixel_height, frame_type)
         frame_labels = f_to_stx.create_stx(isControl)
         object_labels.extend(frame_labels) # append the new frame labels data
         if isTestImage:
@@ -330,9 +330,8 @@ def main(data_dir, stixel_width, isControl = True):
             frame_name = os.path.basename(i.split('.')[0])
             test_writer = tf.python_io.TFRecordWriter(
                 data_dir + '/test/train_img_' +
-                object_name + ' ' + frame_name + '_test_W' +
-                str(stixel_width) + '.tfrecord')
-            f_to_stx = Frame2StxTfrecords(frame_path, i, test_writer, control_dir, stixel_width, frame_type)
+                object_name + ' ' + frame_name + '_test' +'_H'+ str(stixel_height) +  '_W' + str(stixel_width) + '.tfrecord')
+            f_to_stx = Frame2StxTfrecords(frame_path, i, test_writer, control_dir, stixel_width, stixel_height, frame_type)
             f_to_stx.create_stx(isControl)
             capture_train_image = False
             test_writer.close()
@@ -343,7 +342,8 @@ def main(data_dir, stixel_width, isControl = True):
 
     'save coordinates to file'
     meta_data_dir = os.path.join(data_dir + '/meta_data')
-    out_filename = os.path.join(meta_data_dir,object_name + '_W' + str(stixel_width) +  '.csv')
+    out_filename = os.path.join(meta_data_dir,object_name + '_H' + str(stixel_height) + '_W' + str(stixel_width) +  '.csv')
+    #out_filename = os.path.join(meta_data_dir,object_name + '_W' + str(stixel_width) + '.csv')
 
     with open(out_filename, 'w', newline='', encoding="utf-8") as f_output:
         csv_output = csv.writer(f_output)
@@ -353,14 +353,14 @@ def main(data_dir, stixel_width, isControl = True):
 
 if __name__ == '__main__':
 
-
-
     ' when executed as a script, open a GUI window to select the presented TFrecord file '
     root = tk.Tk()
     root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
-    data_dir = filedialog.askdirectory(initialdir='/media/vision/DataRepo')
+    data_dir = filedialog.askdirectory(initialdir='/media/dnn/ML/DataRepo')
     root.destroy()
 
     print('Convert to TFrecords all annotated images within - ' + data_dir + ':')
 
-    main(data_dir, params.image_width, True) # True saves a control image to a control directory
+    main(data_dir, params.image_width, params.image_height, True) # True saves a control image to a control directory
+
+    print(os.getcwd())
