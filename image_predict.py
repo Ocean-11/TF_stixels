@@ -1,11 +1,26 @@
 
+'''
+*
+* image_predict
+*
+* Purpose: the module analyzes an image using a defined model for inference, using the image_predictor class
+*
+* Inputs: image file name, required model
+*
+* Outputs: ArgMax + softmax predictions
+*
+* Conventions: (x=0, y=0) is the upper left corner of the image
+*
+* Written by: Ran Zaslavsky 10-03-2019 (framework originates from excellent https://crosleythomas.github.io/blog/)
+*
+'''
+
 
 #from __future__ import absolute_import
 
 import tensorflow as tf
 import os
 import numpy as np
-#from TF_stixels.code.model import model_fn, params
 from code.model import model_fn, params
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -207,10 +222,9 @@ class image_predictor:
         self.X, self.Y = np.meshgrid(x, y)
         #print(np.shape(self.X), np.shape(self.Y))
 
-        # Create session
+        # Create and run as tensorflow session
         self.sess =  tf.Session()
         self.sess.run(tf.global_variables_initializer())
-
 
         # Load the model
         self.estimator = tf.estimator.Estimator(model_fn, model_dir=model_dir, params=params)

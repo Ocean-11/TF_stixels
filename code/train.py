@@ -57,7 +57,7 @@ class InitHook(tf.train.SessionRunHook):
 ###   Gather Saved Data   ###
 #############################
 
-dataset_dir = '/Dataset_24_222_1'
+dataset_dir = '/Dataset_24_222_2_screened'
 train_dir = '../data' + dataset_dir + '/train'
 valid_dir = '../data' + dataset_dir + '/valid'
 test_dir = '../data' + dataset_dir + '/test'

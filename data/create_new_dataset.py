@@ -44,7 +44,8 @@ def main(data_dir, target_dir, stixel_width, stixel_height):
             os.mkdir(new_folder)
 
     object_names = list(objects.keys())
-    dim_alias = '/H' + str(stixel_height) + '_W' + str(stixel_width)
+    #dim_alias = '/H' + str(stixel_height) + '_W' + str(stixel_width)
+    dim_alias = '/screened_H' + str(stixel_height) + '_W' + str(stixel_width) # use only screened folders
     copy_dir_list = ['/train', '/valid', '/test']
     master_filename = os.path.join(target_dir + '/meta_data', "meta_data.csv") # defines the master CSV file name
 
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     #data_dir = '/media/vision/DataRepo'
     data_dir = '/media/dnn/ML/DataRepo'
     #target_dir = '/media/vision/Datasets/Dataset_19'
-    target_dir = '/media/dnn/ML/Datasets/Dataset_24_222_1'
+    target_dir = '/media/dnn/ML/Datasets/Dataset_24_222_2_screened'
     stixel_width = 24 # 36
     stixel_height = 222 # 370
     print('Extract files from DataRepo - ' + data_dir + ':')

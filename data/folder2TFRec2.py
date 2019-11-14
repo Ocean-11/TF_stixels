@@ -63,6 +63,7 @@ class Frame2StxTfrecords:
         self.labels = []
         self.control_dir = control_dir
         self.frame_type = frame_type
+        self.img = mpimg.imread(self.frame_path)  # img is np.array of the frame
 
         ' Read GT file (retain only first 2 columns) '
         '''
@@ -134,7 +135,8 @@ class Frame2StxTfrecords:
 
     def create_stx(self, printCtrlImage):
         ' read current frame '
-        img = mpimg.imread(self.frame_path)  # img is np.array of the frame
+        #img = mpimg.imread(self.frame_path)  # img is np.array of the frame
+        img = self.img
         height, width, c = img.shape
         #print('image dimensions: h={} w={} c={}'.format(height, width, c))
         x_start = self.frame_ground_truth.x.iat[0]
@@ -307,6 +309,8 @@ def main(data_dir, stixel_width, isControl = True):
         if not(os.path.exists(frame_path)):
             print(frame_path + ' does not exist!')
             continue
+
+
 
         # Split images between train/validation/test
         type_val = random.randint(1, 101)

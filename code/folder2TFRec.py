@@ -44,7 +44,8 @@ import tkinter as tk
 from tkinter import filedialog
 import csv
 #from model_for_CRF import params
-from TF_stixels.code.model_for_CRF import params
+from code.model_for_CRF import params
+import shutil
 import random
 
 TRAIN_IMAGES_RATIO = 80
@@ -65,6 +66,7 @@ class Frame2StxTfrecords:
         self.labels = []
         self.control_dir = control_dir
         self.frame_type = frame_type
+        self.img = mpimg.imread(self.frame_path)  # img is np.array of the frame
 
         ' Read GT file (retain only first 2 columns) '
         if (GT_file_path.endswith('.csv')):
@@ -78,6 +80,19 @@ class Frame2StxTfrecords:
         GT_df = GT_df.iloc[:, 0:2] #getting rid of columns 3 & 4
         GT_df.columns = ["x","y"] # adding columns names
         self.frame_ground_truth = GT_df
+
+    def is_boundary_close(self, boundary_limit):
+        min_bouandry = self.frame_ground_truth['y'].min()
+        max_bouandry = self.frame_ground_truth['y'].max()
+        height, width, c = self.img.shape
+        closest_boundary = height - max_bouandry
+        #print('boundary between {} and {}, image height = {}, closest boundary = {}'.format(min_bouandry,max_bouandry, height, closest_boundary))
+        #print('boundary between {} and {}'.format(min_bouandry,max_bouandry)
+        if closest_boundary < boundary_limit:
+            return True
+        else:
+            return False
+
 
     def int64_feature(self, value):
         return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
@@ -121,7 +136,8 @@ class Frame2StxTfrecords:
 
     def create_stx(self, printCtrlImage):
         ' read current frame '
-        img = mpimg.imread(self.frame_path)  # img is np.array of the frame
+        #img = mpimg.imread(self.frame_path)  # img is np.array of the frame
+        img = self.img
         height, width, c = img.shape
         #print('image dimensions: h={} w={} c={}'.format(height, width, c))
         x_start = self.frame_ground_truth.x.iat[0]
@@ -256,10 +272,13 @@ def main(data_dir, stixel_width, stixel_height, isControl = True):
         print('Folder name: ' + object_name + 'images to be converted - {}'.format(num_images))
 
     # Create required folders
-    data_dir = data_dir+'/H'+ str(stixel_height) +'_W'+ str(stixel_width)
+    data_dir = data_dir+'/screened_H'+ str(stixel_height) +'_W'+ str(stixel_width)
     print(data_dir)
     if os.path.exists(data_dir) and os.path.isdir(data_dir):
-        shutil.rmtree(data_dir)
+        shutil.rmtree(data_dir, ignore_errors=True)
+        print('directory already exists - removing!!!!!')
+        #return
+
     os.mkdir(data_dir)
     folders = {'train', 'valid', 'test', 'control', 'meta_data'}
     for folder_ in folders:
@@ -294,7 +313,7 @@ def main(data_dir, stixel_width, stixel_height, isControl = True):
             print(frame_path + ' does not exist!')
             continue
 
-        # Split images between train/validation/test
+       # Split images between train/validation/test
         type_val = random.randint(1, 101)
         isTestImage = False
         if type_val<=TRAIN_IMAGES_RATIO:
@@ -315,8 +334,20 @@ def main(data_dir, stixel_width, stixel_height, isControl = True):
             isTestImage = True
             print('parse: ' + frame_path + '->test')
 
-        # parse the image and save it to TFrecord
+        # Init Frame2StxTfrecords object
         f_to_stx = Frame2StxTfrecords(frame_path, i, writer,control_dir, stixel_width, stixel_height, frame_type)
+
+        # Filter inmages in which the boundary is too far
+        is_boundary_close_enough = f_to_stx.is_boundary_close(stixel_height)
+        if not(is_boundary_close_enough):
+            print('boundary too far, skipping')
+            if isTestImage:
+                # Close the test image writer
+                test_writer.close()
+                isTestImage = False
+            continue
+
+        # parse the image and save it to TFrecord
         frame_labels = f_to_stx.create_stx(isControl)
         object_labels.extend(frame_labels) # append the new frame labels data
         if isTestImage:

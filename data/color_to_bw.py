@@ -1,13 +1,13 @@
 
 '''
 *
-* crop_image()
+* color_to_bw()
 *
-* Purpose: crops an images folder using prescribed x limits
+* Purpose: translates an images folder to grey scale
 *
-* Output: Cropped directory containing the cropped images
+* Output: BW directory containing the bw images
 *
-* Written by: Ran Zaslavsky 04-12-2019
+* Written by: Ran Zaslavsky 04-08-2019
 '''
 
 

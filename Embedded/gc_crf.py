@@ -21,6 +21,7 @@
 # from __future__ import absolute_import
 
 import numpy as np
+import time
 
 ############################################
 ###   Viterbi algorithm implementation   ###
@@ -53,18 +54,17 @@ def viterbi(observations_matrix, N, T, W_trans):
     # Init
     W_unary = 1
     observations_shape = np.shape(observations_matrix)
-    stixel_dim = observations_shape[1]
+    row_width = observations_shape[1]
     border_length = observations_shape[0]
-    #print('stixel_cells_num = {}'.format(stixel_dim))
-    new_energy_vec = np.zeros((stixel_dim,1))
+    #print('stixel_cells_num = {}'.format(row_width))
+    new_energy_vec = np.zeros((row_width,1))
     energy_vec = -np.log(observations_matrix[0 ,:] ) * W_unary
-    #print(energy_vec)
-    path_matrix = np.zeros((border_length,stixel_dim))
-    #print(np.shape(path_matrix))
-    transition_matrix = create_transition_matrix(stixel_dim ,N ,T, W_trans)
+    path_matrix = np.zeros((border_length,row_width))
+    transition_matrix = create_transition_matrix(row_width ,N ,T, W_trans)
 
     # Go through each row
     for to_row in range(1,border_length):
+    #for to_row in range(1, 3):
         # find max probability cell in "to_row" ????
         from_row_max_prob = max(observations_matrix[to_row, :])
         for index, i in enumerate(observations_matrix[to_row, :]):
@@ -73,13 +73,13 @@ def viterbi(observations_matrix, N, T, W_trans):
         #print('\nanalyze transitions to row {}, max cell = {}'.format(to_row, max_cell_index))
 
         # Go through each cell and find the lowest energy path to it
-        for to_cell in range(stixel_dim):
+        for to_cell in range(row_width):
             # Init lowest transition energy
             min_energy_cell_num = 0
             min_energy = energy_vec[0] + transition_matrix[0, to_cell]
             #print('{} -> {}: {}'.format(0, to_cell, int(energy_vec[0] + transition_matrix[0, to_cell])))
             # Go through all possible from_cells
-            for from_cell in range(1,stixel_dim):
+            for from_cell in range(1,row_width):
                 #print('{} -> {}: {} + {}'.format(from_cell, to_cell, int(energy_vec[from_cell]), transition_matrix[from_cell,to_cell]))
                 transition_energy = energy_vec[from_cell] + transition_matrix[from_cell, to_cell]
                 if (transition_energy < min_energy):
@@ -107,7 +107,7 @@ def viterbi(observations_matrix, N, T, W_trans):
 
     # find the best path
     #print(path_matrix)
-    #print('Find the best trail from end point to first one (max probability cell {}):'.format(max_cell_index))
+    print('Find the best trail from end point to first one (max probability cell {}):'.format(max_cell_index))
     a = min(energy_vec)
     end_of_trail = -1
     for index,i in enumerate(energy_vec):
@@ -134,6 +134,7 @@ def viterbi(observations_matrix, N, T, W_trans):
 
     return best_path
 
+
 #############################################################
 ###   Visualizing predictions and creating output video   ###
 #############################################################
@@ -141,7 +142,10 @@ def viterbi(observations_matrix, N, T, W_trans):
 def main(grid, N, T, W_trans):
 
     # Use CRF to find the best path
+    start_time = time.time()
     best_path = viterbi(grid.T, N, T, W_trans)
+    print('elapsed time = {}'.format(time.time() - start_time))
+
     for index, path in enumerate(best_path):
         print('{}: {}'.format(index,path))
 

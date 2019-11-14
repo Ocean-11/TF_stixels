@@ -3,8 +3,8 @@
 import tkinter as tk
 from tkinter import filedialog
 import glob
-from TF_stixels.code import folder2TFRec
-from TF_stixels.code.model_for_CRF import params
+from code import folder2TFRec
+from code.model_for_CRF import params
 
 root = tk.Tk()
 root.withdraw()  # we don't want a full GUI, so keep the root window from appearing
@@ -20,6 +20,6 @@ object_dirs = glob.glob(data_dir + '/*')
 objects = {}
 for dir_ in object_dirs:
     #objects[d.split('/')[-1]] = glob.glob(d + '/*.csv')  # Take the last subfolder name as the key
-    print(dir_)
+    print('Coverting ' + dir_)
     folder2TFRec.main(dir_, params.image_width, params.image_height, True)
 

@@ -321,7 +321,8 @@ if __name__ == '__main__':
 
     # Determine input image
     cwd = os.getcwd()
-    image_in = os.path.join(cwd, 'frame_000136.jpg')
+    #image_in = os.path.join(cwd, 'frame_000136.jpg')
+    image_in = os.path.join(cwd, 'frame_000997.jpg')
     image_width = 476
 
     if os.path.exists(image_in):

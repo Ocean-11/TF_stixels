@@ -1,6 +1,16 @@
 
 
-#from __future__ import absolute_import
+'''
+*
+* folder_predict
+*
+* Purpose: Scans an entire folder and analyzes the images within it using image_predict() script
+*
+* Inputs: in folder & model names
+*
+* Written by: Ran Zaslavsky 10-03-2019
+*
+'''
 
 
 import os
@@ -29,6 +39,8 @@ if __name__ == '__main__':
     #in_folder_name = '/media/vision/Results/for_galit'
     #in_folder_name = '/media/dnn/ML/Results/test_video_sessionA'
     in_folder_name = '/media/dnn/ML/Results/test_video_sessionA_1'
+    #in_folder_name = '/media/dnn/ML/Results/10_2019_test_images'
+    #in_folder_name = '/media/dnn/ML/Results/edge_flipped_wire'
 
     #in_folder_name = '/media/dnn/ML/Results/test_video_UKSite4GC'
     #image_width = 636  # when image width = 636
